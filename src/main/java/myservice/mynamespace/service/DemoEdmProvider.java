@@ -53,7 +53,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 	public static final String ET_APPCONFG_NAME = "Appconfg";
 	public static final FullQualifiedName ET_APPCONFG_FQN = new FullQualifiedName(NAMESPACE, ET_APPCONFG_NAME);
 
-	public static final String ET_DATACONF_NAME = "dataconf";
+	public static final String ET_DATACONF_NAME = "Dataconf";
 	public static final FullQualifiedName ET_DATACONF_FQN = new FullQualifiedName(NAMESPACE, ET_DATACONF_NAME);
 
 	public static final String ET_CATEGORY_NAME = "Category";
