@@ -19,6 +19,15 @@
 package myservice.mynamespace.service;
 
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -51,7 +60,9 @@ import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.apache.olingo.server.api.uri.UriResourceNavigation;
 
+import myservice.mynamespace.data.DBUtillocal;
 import myservice.mynamespace.data.Storage;
+import myservice.mynamespace.util.TracingBean;
 import myservice.mynamespace.util.Util;
 
 public class DemoEntityProcessor implements EntityProcessor {
@@ -59,9 +70,23 @@ public class DemoEntityProcessor implements EntityProcessor {
 	private OData odata;
 	private ServiceMetadata srvMetadata;
 	private Storage storage;
+	InetAddress ip = null;
+	String hostname;
+	TracingBean bean = new TracingBean();
 
 	public DemoEntityProcessor(Storage storage) {
 		this.storage = storage;
+		try {
+			ip = InetAddress.getLocalHost();
+			bean.setIp(ip);
+			hostname = ip.getHostName();
+			bean.setHostname(hostname);
+			String dateandTime = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(Calendar.getInstance().getTime());
+			bean.setDateand_Time(dateandTime);
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void init(OData odata, ServiceMetadata serviceMetadata) {
@@ -81,6 +106,9 @@ public class DemoEntityProcessor implements EntityProcessor {
 	 */
 	public void readEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType responseFormat)
 			throws ODataApplicationException, SerializerException {
+		Date relativeTime = new Date();
+		bean.setRequest_Method(request.getMethod() + "");
+		bean.setContent_type_body("Content-Type:" + responseFormat);
 
 		EdmEntityType responseEdmEntityType = null; // we'll need this to build
 													// the ContextURL
@@ -163,6 +191,9 @@ public class DemoEntityProcessor implements EntityProcessor {
 
 		// 3. serialize
 		ContextURL contextUrl = ContextURL.with().entitySet(responseEdmEntitySet).suffix(Suffix.ENTITY).build();
+		final String id = request.getRawBaseUri() + "/" + responseEdmEntitySet.getName();
+		System.out.println("http.url : " + id);
+		bean.setRequest_Uri(request.getRawRequestUri());
 		EntitySerializerOptions opts = EntitySerializerOptions.with().contextURL(contextUrl).build();
 
 		ODataSerializer serializer = this.odata.createSerializer(responseFormat);
@@ -170,6 +201,55 @@ public class DemoEntityProcessor implements EntityProcessor {
 				opts);
 
 		// 4. configure the response object
+		Date nowTime = new Date();
+		long diffs = nowTime.getTime() - relativeTime.getTime();
+		;
+		long dateandTimes = diffs / 1000;
+		bean.setTime_Diffirence(dateandTimes);
+		bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
+
+		Connection con = null;
+		try {
+			con = DBUtillocal.getConnection();
+			int ID = 0;
+			String querys = "select * from requesttracing";
+			Statement pstmt = con.createStatement();
+			java.sql.ResultSet rs = pstmt.executeQuery(querys);
+			while (rs.next()) {
+
+				ID = rs.getInt("sr_no") + 1;
+			}
+			bean.setSr_no(ID);
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			PreparedStatement pStmt = con.prepareStatement(query);
+			pStmt.setString(1, bean.getIp() + "");
+			pStmt.setString(2, bean.getHostname() + "");
+			pStmt.setString(3, bean.getDateand_Time() + "");
+			pStmt.setLong(4, bean.getTime_Diffirence());
+			pStmt.setString(5, bean.getRequest_Uri());
+			pStmt.setInt(6, bean.getResponse_Code());
+			pStmt.setInt(7, bean.getSr_no());
+			pStmt.setString(8, bean.getRequest_Method() + "");
+			pStmt.setString(9, bean.getContent_type_body());
+			int n = pStmt.executeUpdate();
+			if (n > 0) {
+				System.out.println("Data Inserted Successfully ID:" + n);
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
 		response.setContent(serializerResult.getContent());
 		response.setStatusCode(HttpStatusCode.OK.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
@@ -181,11 +261,13 @@ public class DemoEntityProcessor implements EntityProcessor {
 
 	public void createEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat,
 			ContentType responseFormat) throws ODataApplicationException, DeserializerException, SerializerException {
+		Date relativeTime = new Date();
+		bean.setRequest_Method(request.getMethod() + "");
+		
 
 		// 1. Retrieve the entity type from the URI
 		EdmEntitySet edmEntitySet = Util.getEdmEntitySet(uriInfo);
 		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-
 		// 2. create the data in backend
 		// 2.1. retrieve the payload from the POST request for the entity to
 		// create and deserialize it
@@ -195,10 +277,16 @@ public class DemoEntityProcessor implements EntityProcessor {
 		Entity requestEntity = result.getEntity();
 		// 2.2 do the creation in backend, which returns the newly created
 		// entity
+		//System.out.println("Content-Type:" + requestFormat + "\n" + requestEntity);
+		bean.setContent_type_body("Content-Type:" + requestFormat + "\n" + requestEntity);
+
 		Entity createdEntity = storage.createEntityData(edmEntitySet, requestEntity);
 
 		// 3. serialize the response (we have to return the created entity)
 		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+		final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
+		System.out.println("http.url : " + id);
+		bean.setRequest_Uri(request.getRawRequestUri());
 		// expand and select currently not supported
 		EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).build();
 
@@ -206,6 +294,55 @@ public class DemoEntityProcessor implements EntityProcessor {
 		SerializerResult serializedResponse = serializer.entity(srvMetadata, edmEntityType, createdEntity, options);
 
 		// 4. configure the response object
+		Date nowTime = new Date();
+		long diffs = nowTime.getTime() - relativeTime.getTime();
+		;
+		long dateandTimes = diffs / 1000;
+		bean.setTime_Diffirence(dateandTimes);
+		bean.setResponse_Code(HttpStatusCode.CREATED.getStatusCode());
+
+		Connection con = null;
+		try {
+			con = DBUtillocal.getConnection();
+			int ID = 0;
+			String querys = "select * from requesttracing";
+			Statement pstmt = con.createStatement();
+			java.sql.ResultSet rs = pstmt.executeQuery(querys);
+			while (rs.next()) {
+
+				ID = rs.getInt("sr_no") + 1;
+			}
+			bean.setSr_no(ID);
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			PreparedStatement pStmt = con.prepareStatement(query);
+			pStmt.setString(1, bean.getIp() + "");
+			pStmt.setString(2, bean.getHostname() + "");
+			pStmt.setString(3, bean.getDateand_Time() + "");
+			pStmt.setLong(4, bean.getTime_Diffirence());
+			pStmt.setString(5, bean.getRequest_Uri());
+			pStmt.setInt(6, bean.getResponse_Code());
+			pStmt.setInt(7, bean.getSr_no());
+			pStmt.setString(8, bean.getRequest_Method());
+			pStmt.setString(9, bean.getContent_type_body());
+			int n = pStmt.executeUpdate();
+			if (n > 0) {
+				System.out.println("Data Inserted Successfully ID:" + n);
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
 		response.setContent(serializedResponse.getContent());
 		response.setStatusCode(HttpStatusCode.CREATED.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
@@ -213,6 +350,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 
 	public void updateEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat,
 			ContentType responseFormat) throws ODataApplicationException, DeserializerException, SerializerException {
+		Date relativeTime = new Date();
+		bean.setRequest_Method(request.getMethod() + "");
 
 		// 1. Retrieve the entity set which belongs to the requested entity
 		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
@@ -221,6 +360,9 @@ public class DemoEntityProcessor implements EntityProcessor {
 		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
 		EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+		final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
+		System.out.println("http.url : " + id);
+		bean.setRequest_Uri(request.getRawRequestUri());
 
 		// 2. update the data in backend
 		// 2.1. retrieve the payload from the PUT request for the entity to be
@@ -229,6 +371,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 		ODataDeserializer deserializer = this.odata.createDeserializer(requestFormat);
 		DeserializerResult result = deserializer.entity(requestInputStream, edmEntityType);
 		Entity requestEntity = result.getEntity();
+		bean.setContent_type_body("Content-Type:" + requestFormat + "\n" + requestEntity);
+		System.out.println("Content-Type:" + requestFormat + "\n" + requestEntity);
 		// 2.2 do the modification in backend
 		List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
 		// Note that this updateEntity()-method is invoked for both PUT or PATCH
@@ -237,11 +381,62 @@ public class DemoEntityProcessor implements EntityProcessor {
 		storage.updateEntityData(edmEntitySet, keyPredicates, requestEntity, httpMethod);
 
 		// 3. configure the response object
+		Date nowTime = new Date();
+		long diffs = nowTime.getTime() - relativeTime.getTime();
+		;
+		long dateandTimes = diffs / 1000;
+		bean.setTime_Diffirence(dateandTimes);
+		bean.setResponse_Code(HttpStatusCode.NO_CONTENT.getStatusCode());
+
+		Connection con = null;
+		try {
+			con = DBUtillocal.getConnection();
+			int ID = 0;
+			String querys = "select * from requesttracing";
+			Statement pstmt = con.createStatement();
+			java.sql.ResultSet rs = pstmt.executeQuery(querys);
+			while (rs.next()) {
+
+				ID = rs.getInt("sr_no") + 1;
+			}
+			bean.setSr_no(ID);
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			PreparedStatement pStmt = con.prepareStatement(query);
+			pStmt.setString(1, bean.getIp() + "");
+			pStmt.setString(2, bean.getHostname() + "");
+			pStmt.setString(3, bean.getDateand_Time() + "");
+			pStmt.setLong(4, bean.getTime_Diffirence());
+			pStmt.setString(5, bean.getRequest_Uri());
+			pStmt.setInt(6, bean.getResponse_Code());
+			pStmt.setInt(7, bean.getSr_no());
+			pStmt.setString(8, bean.getRequest_Method());
+			pStmt.setString(9, bean.getContent_type_body());
+			int n = pStmt.executeUpdate();
+			if (n > 0) {
+				System.out.println("Data Inserted Successfully ID:" + n);
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
 		response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
 	}
 
 	public void deleteEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo)
 			throws ODataApplicationException {
+		Date relativeTime = new Date();
+		bean.setRequest_Method(request.getMethod() + "");
 
 		// 1. Retrieve the entity set which belongs to the requested entity
 		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
@@ -249,12 +444,63 @@ public class DemoEntityProcessor implements EntityProcessor {
 		// EntitySet
 		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
 		EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
+		bean.setRequest_Uri(request.getRawRequestUri());
 
 		// 2. delete the data in backend
 		List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
 		storage.deleteEntityData(edmEntitySet, keyPredicates);
 
 		// 3. configure the response object
+		Date nowTime = new Date();
+		long diffs = nowTime.getTime() - relativeTime.getTime();
+		;
+		long dateandTimes = diffs / 1000;
+		bean.setTime_Diffirence(dateandTimes);
+		bean.setResponse_Code(HttpStatusCode.NO_CONTENT.getStatusCode());
+
+		Connection con = null;
+		try {
+			con = DBUtillocal.getConnection();
+			int ID = 0;
+			String querys = "select * from requesttracing";
+			Statement pstmt = con.createStatement();
+			java.sql.ResultSet rs = pstmt.executeQuery(querys);
+			while (rs.next()) {
+
+				ID = rs.getInt("sr_no") + 1;
+			}
+			bean.setSr_no(ID);
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			PreparedStatement pStmt = con.prepareStatement(query);
+			pStmt.setString(1, bean.getIp() + "");
+			pStmt.setString(2, bean.getHostname() + "");
+			pStmt.setString(3, bean.getDateand_Time() + "");
+			pStmt.setLong(4, bean.getTime_Diffirence());
+			pStmt.setString(5, bean.getRequest_Uri());
+			pStmt.setInt(6, bean.getResponse_Code());
+			pStmt.setInt(7, bean.getSr_no());
+			pStmt.setString(8, bean.getRequest_Method());
+			pStmt.setString(9, bean.getContent_type_body());
+
+			int n = pStmt.executeUpdate();
+			if (n > 0) {
+				System.out.println("Data Inserted Successfully ID:" + n);
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
 		response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
 	}
 }

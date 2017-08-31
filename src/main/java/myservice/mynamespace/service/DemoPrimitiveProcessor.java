@@ -19,10 +19,17 @@
 package myservice.mynamespace.service;
 
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import myservice.mynamespace.data.Storage;
 
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
@@ -50,101 +57,227 @@ import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.apache.olingo.server.api.uri.UriResourceProperty;
 
+import myservice.mynamespace.data.DBUtillocal;
+import myservice.mynamespace.data.Storage;
+import myservice.mynamespace.util.TracingBean;
+
 public class DemoPrimitiveProcessor implements PrimitiveProcessor {
 
-  private OData odata;
-  private Storage storage;
-  private ServiceMetadata serviceMetadata;
+	private OData odata;
+	private Storage storage;
+	private ServiceMetadata serviceMetadata;
+	InetAddress ip = null;
+	String hostname;
+	TracingBean bean = new TracingBean();
 
-  public DemoPrimitiveProcessor(Storage storage) {
-    this.storage = storage;
-  }
+	public DemoPrimitiveProcessor(Storage storage) {
+		this.storage = storage;
+		try {
+			ip = InetAddress.getLocalHost();
+			bean.setIp(ip);
+			hostname = ip.getHostName();
+			bean.setHostname(hostname);
+			String dateandTime = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(Calendar.getInstance().getTime());
+			bean.setDateand_Time(dateandTime);
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
-  public void init(OData odata, ServiceMetadata serviceMetadata) {
-    this.odata = odata;
-    this.serviceMetadata = serviceMetadata;
+	public void init(OData odata, ServiceMetadata serviceMetadata) {
+		this.odata = odata;
+		this.serviceMetadata = serviceMetadata;
 
-  }
+	}
 
-  /*
-   * In our example, the URL would be: http://localhost:8080/DemoService/DemoService.svc/Products(1)/Name
-   * and the response:
-   * {
-   * 
-   * @odata.context: "$metadata#Products/Name",
-   * value: "Notebook Basic 15"
-   * }
-   */
-  public void readPrimitive(ODataRequest request, ODataResponse response,
-      UriInfo uriInfo, ContentType responseFormat)
-      throws ODataApplicationException, SerializerException {
+	/*
+	 * In our example, the URL would be:
+	 * http://localhost:8080/DemoService/DemoService.svc/Products(1)/Name and
+	 * the response: {
+	 * 
+	 * @odata.context: "$metadata#Products/Name", value: "Notebook Basic 15" }
+	 */
+	public void readPrimitive(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType responseFormat)
+			throws ODataApplicationException, SerializerException {
+		Date relativeTime = new Date();
+		bean.setRequest_Method(request.getMethod() + "");
+		bean.setContent_type_body("Content-Type:" + responseFormat);
 
-    // 1. Retrieve info from URI
-    // 1.1. retrieve the info about the requested entity set
-    List<UriResource> resourceParts = uriInfo.getUriResourceParts();
-    // Note: only in our example we can rely that the first segment is the EntitySet
-    UriResourceEntitySet uriEntityset = (UriResourceEntitySet) resourceParts.get(0);
-    EdmEntitySet edmEntitySet = uriEntityset.getEntitySet();
-    // the key for the entity
-    List<UriParameter> keyPredicates = uriEntityset.getKeyPredicates();
+		// 1. Retrieve info from URI
+		// 1.1. retrieve the info about the requested entity set
+		List<UriResource> resourceParts = uriInfo.getUriResourceParts();
+		// Note: only in our example we can rely that the first segment is the
+		// EntitySet
+		UriResourceEntitySet uriEntityset = (UriResourceEntitySet) resourceParts.get(0);
+		EdmEntitySet edmEntitySet = uriEntityset.getEntitySet();
+		// the key for the entity
+		List<UriParameter> keyPredicates = uriEntityset.getKeyPredicates();
 
-    // 1.2. retrieve the requested (Edm) property
-    // the last segment is the Property
-    UriResourceProperty uriProperty = (UriResourceProperty) resourceParts.get(resourceParts.size() - 1);
-    EdmProperty edmProperty = uriProperty.getProperty();
-    String edmPropertyName = edmProperty.getName();
-    // in our example, we know we have only primitive types in our model
-    EdmPrimitiveType edmPropertyType = (EdmPrimitiveType) edmProperty.getType();
+		// 1.2. retrieve the requested (Edm) property
+		// the last segment is the Property
+		UriResourceProperty uriProperty = (UriResourceProperty) resourceParts.get(resourceParts.size() - 1);
+		EdmProperty edmProperty = uriProperty.getProperty();
+		String edmPropertyName = edmProperty.getName();
+		// in our example, we know we have only primitive types in our model
+		EdmPrimitiveType edmPropertyType = (EdmPrimitiveType) edmProperty.getType();
 
-    // 2. retrieve data from backend
-    // 2.1. retrieve the entity data, for which the property has to be read
-    Entity entity = storage.readEntityData(edmEntitySet, keyPredicates);
-    if (entity == null) { // Bad request
-      throw new ODataApplicationException("Entity not found",
-          HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ENGLISH);
-    }
+		// 2. retrieve data from backend
+		// 2.1. retrieve the entity data, for which the property has to be read
+		Entity entity = storage.readEntityData(edmEntitySet, keyPredicates);
+		if (entity == null) { // Bad request
+			throw new ODataApplicationException("Entity not found", HttpStatusCode.NOT_FOUND.getStatusCode(),
+					Locale.ENGLISH);
+		}
 
-    // 2.2. retrieve the property data from the entity
-    Property property = entity.getProperty(edmPropertyName);
-    if (property == null) {
-      throw new ODataApplicationException("Property not found",
-          HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ENGLISH);
-    }
+		// 2.2. retrieve the property data from the entity
+		Property property = entity.getProperty(edmPropertyName);
+		if (property == null) {
+			throw new ODataApplicationException("Property not found", HttpStatusCode.NOT_FOUND.getStatusCode(),
+					Locale.ENGLISH);
+		}
 
-    // 3. serialize
-    Object value = property.getValue();
-    if (value != null) {
-      // 3.1. configure the serializer
-      ODataSerializer serializer = odata.createSerializer(responseFormat);
+		// 3. serialize
+		Object value = property.getValue();
+		if (value != null) {
+			// 3.1. configure the serializer
+			ODataSerializer serializer = odata.createSerializer(responseFormat);
 
-      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).navOrPropertyPath(edmPropertyName).build();
-      PrimitiveSerializerOptions options = PrimitiveSerializerOptions.with().contextURL(contextUrl).build();
-      // 3.2. serialize
-      SerializerResult serializerResult = serializer.primitive(serviceMetadata, edmPropertyType, property, options);
-      InputStream propertyStream = serializerResult.getContent();
+			ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).navOrPropertyPath(edmPropertyName)
+					.build();
+			final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
+			System.out.println("http.url : " + id);
+			bean.setRequest_Uri(request.getRawRequestUri());
+			PrimitiveSerializerOptions options = PrimitiveSerializerOptions.with().contextURL(contextUrl).build();
+			// 3.2. serialize
+			SerializerResult serializerResult = serializer.primitive(serviceMetadata, edmPropertyType, property,
+					options);
+			InputStream propertyStream = serializerResult.getContent();
 
-      // 4. configure the response object
-      response.setContent(propertyStream);
-      response.setStatusCode(HttpStatusCode.OK.getStatusCode());
-      response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
-    } else {
-      // in case there's no value for the property, we can skip the serialization
-      response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
-    }
-  }
+			// 4. configure the response object
+			Date nowTime = new Date();
+			long diffs = nowTime.getTime() - relativeTime.getTime();
+			;
+			long dateandTimes = diffs / 1000;
+			bean.setTime_Diffirence(dateandTimes);
+			bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
 
-  /*
-   * These processor methods are not handled in this tutorial
-   */
+			Connection con = null;
+			try {
+				con = DBUtillocal.getConnection();
+				int ID = 0;
+				String querys = "select * from requesttracing";
+				Statement pstmt = con.createStatement();
+				java.sql.ResultSet rs = pstmt.executeQuery(querys);
+				while (rs.next()) {
 
-  public void updatePrimitive(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat,
-      ContentType responseFormat)
-      throws ODataApplicationException, DeserializerException, SerializerException {
-    throw new ODataApplicationException("Not supported.", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
-  }
+					ID = rs.getInt("sr_no") + 1;
+				}
+				bean.setSr_no(ID);
+				String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method) values(?,?,?,?,?,?,?,?)";
+				PreparedStatement pStmt = con.prepareStatement(query);
+				pStmt.setString(1, bean.getIp() + "");
+				pStmt.setString(2, bean.getHostname() + "");
+				pStmt.setString(3, bean.getDateand_Time() + "");
+				pStmt.setLong(4, bean.getTime_Diffirence());
+				pStmt.setString(5, bean.getRequest_Uri());
+				pStmt.setInt(6, bean.getResponse_Code());
+				pStmt.setInt(7, bean.getSr_no());
+				pStmt.setString(8, bean.getRequest_Method());
+				int n = pStmt.executeUpdate();
+				if (n > 0) {
+					System.out.println("Data Inserted Successfully ID:" + n);
+				}
 
-  public void deletePrimitive(ODataRequest request, ODataResponse response, UriInfo uriInfo)
-      throws ODataApplicationException {
-    throw new ODataApplicationException("Not supported.", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
-  }
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				if (con != null) {
+					try {
+						con.close();
+						DBUtillocal.Close();
+					} catch (Exception e) {
+						System.out.println("exception in closing connection");
+						e.printStackTrace();
+					}
+				}
+			}
+			response.setContent(propertyStream);
+			response.setStatusCode(HttpStatusCode.OK.getStatusCode());
+			response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
+		} else {
+			// in case there's no value for the property, we can skip the
+			// serialization
+			bean.setRequest_Method(request.getMethod() + "");
+
+			Date nowTime = new Date();
+			long diffs = nowTime.getTime() - relativeTime.getTime();
+			;
+			long dateandTimes = diffs / 1000;
+			bean.setTime_Diffirence(dateandTimes);
+			bean.setResponse_Code(HttpStatusCode.NO_CONTENT.getStatusCode());
+
+			Connection con = null;
+			try {
+				con = DBUtillocal.getConnection();
+				int ID = 0;
+				String querys = "select * from requesttracing";
+				Statement pstmt = con.createStatement();
+				java.sql.ResultSet rs = pstmt.executeQuery(querys);
+				while (rs.next()) {
+
+					ID = rs.getInt("sr_no") + 1;
+				}
+				bean.setSr_no(ID);
+				String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+				PreparedStatement pStmt = con.prepareStatement(query);
+				pStmt.setString(1, bean.getIp() + "");
+				pStmt.setString(2, bean.getHostname() + "");
+				pStmt.setString(3, bean.getDateand_Time() + "");
+				pStmt.setLong(4, bean.getTime_Diffirence());
+				pStmt.setString(5, bean.getRequest_Uri());
+				pStmt.setInt(6, bean.getResponse_Code());
+				pStmt.setInt(7, bean.getSr_no());
+				pStmt.setString(8, bean.getRequest_Method());
+				pStmt.setString(9, bean.getContent_type_body());
+				int n = pStmt.executeUpdate();
+				if (n > 0) {
+					System.out.println("Data Inserted Successfully ID:" + n);
+				}
+
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				if (con != null) {
+					try {
+						con.close();
+						DBUtillocal.Close();
+					} catch (Exception e) {
+						System.out.println("exception in closing connection");
+						e.printStackTrace();
+					}
+				}
+			}
+			response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
+		}
+	}
+
+	/*
+	 * These processor methods are not handled in this tutorial
+	 */
+
+	public void updatePrimitive(ODataRequest request, ODataResponse response, UriInfo uriInfo,
+			ContentType requestFormat, ContentType responseFormat)
+			throws ODataApplicationException, DeserializerException, SerializerException {
+		throw new ODataApplicationException("Not supported.", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(),
+				Locale.ROOT);
+	}
+
+	public void deletePrimitive(ODataRequest request, ODataResponse response, UriInfo uriInfo)
+			throws ODataApplicationException {
+		throw new ODataApplicationException("Not supported.", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(),
+				Locale.ROOT);
+	}
 }

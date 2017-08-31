@@ -29,6 +29,6 @@
 	
 	<servlet-mapping>
 	  <servlet-name>DemoServlet</servlet-name>
-	  <url-pattern>/DemoService.svc/*</url-pattern>
+	  <url-pattern>/INVAPI/RACE_API_SRV/*</url-pattern>
 	</servlet-mapping>
 </web-app>

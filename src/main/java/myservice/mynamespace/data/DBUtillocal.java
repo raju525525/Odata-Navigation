@@ -3,8 +3,11 @@ package myservice.mynamespace.data;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 public class DBUtillocal {
@@ -58,6 +61,15 @@ public class DBUtillocal {
 		}
 		 return collectionName;
 		
+	}
+	
+	public static void main(String[] args) {
+		List drivers = Collections.list(DriverManager.getDrivers());   
+		for(int i=0;i<drivers.size();i++){   
+		Driver driver = (Driver)drivers.get(i);   
+		String driverName = driver.getClass().getName();   
+		System.out.println("Driver "+i+":::"+driverName); 
+	}
 	}
 
 }
