@@ -109,6 +109,10 @@ public class DemoEntityProcessor implements EntityProcessor {
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
 		bean.setContent_type_body("Content-Type:" + responseFormat);
+		bean.setOperation_name("READ_ENTIRY");
+		bean.setClass_name("DemoEntityProcessor");
+
+
 
 		EdmEntityType responseEdmEntityType = null; // we'll need this to build
 													// the ContextURL
@@ -220,7 +224,7 @@ public class DemoEntityProcessor implements EntityProcessor {
 				ID = rs.getInt("sr_no") + 1;
 			}
 			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
 			PreparedStatement pStmt = con.prepareStatement(query);
 			pStmt.setString(1, bean.getIp() + "");
 			pStmt.setString(2, bean.getHostname() + "");
@@ -231,6 +235,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			pStmt.setInt(7, bean.getSr_no());
 			pStmt.setString(8, bean.getRequest_Method() + "");
 			pStmt.setString(9, bean.getContent_type_body());
+			pStmt.setString(10, bean.getOperation_name());
+			pStmt.setString(11, bean.getClass_name());
 			int n = pStmt.executeUpdate();
 			if (n > 0) {
 				System.out.println("Data Inserted Successfully ID:" + n);
@@ -263,7 +269,9 @@ public class DemoEntityProcessor implements EntityProcessor {
 			ContentType responseFormat) throws ODataApplicationException, DeserializerException, SerializerException {
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
-		
+		bean.setOperation_name("CREAT_ENTIRY");
+		bean.setClass_name("DemoEntityProcessor");
+
 
 		// 1. Retrieve the entity type from the URI
 		EdmEntitySet edmEntitySet = Util.getEdmEntitySet(uriInfo);
@@ -313,7 +321,7 @@ public class DemoEntityProcessor implements EntityProcessor {
 				ID = rs.getInt("sr_no") + 1;
 			}
 			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
 			PreparedStatement pStmt = con.prepareStatement(query);
 			pStmt.setString(1, bean.getIp() + "");
 			pStmt.setString(2, bean.getHostname() + "");
@@ -324,6 +332,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			pStmt.setInt(7, bean.getSr_no());
 			pStmt.setString(8, bean.getRequest_Method());
 			pStmt.setString(9, bean.getContent_type_body());
+			pStmt.setString(10, bean.getOperation_name());
+			pStmt.setString(11, bean.getClass_name());
 			int n = pStmt.executeUpdate();
 			if (n > 0) {
 				System.out.println("Data Inserted Successfully ID:" + n);
@@ -352,6 +362,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			ContentType responseFormat) throws ODataApplicationException, DeserializerException, SerializerException {
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
+		bean.setOperation_name("UPDATE_ENTIRY");
+		bean.setClass_name("DemoEntityProcessor");
 
 		// 1. Retrieve the entity set which belongs to the requested entity
 		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
@@ -400,7 +412,7 @@ public class DemoEntityProcessor implements EntityProcessor {
 				ID = rs.getInt("sr_no") + 1;
 			}
 			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
 			PreparedStatement pStmt = con.prepareStatement(query);
 			pStmt.setString(1, bean.getIp() + "");
 			pStmt.setString(2, bean.getHostname() + "");
@@ -411,6 +423,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			pStmt.setInt(7, bean.getSr_no());
 			pStmt.setString(8, bean.getRequest_Method());
 			pStmt.setString(9, bean.getContent_type_body());
+			pStmt.setString(10, bean.getOperation_name());
+			pStmt.setString(11, bean.getClass_name());
 			int n = pStmt.executeUpdate();
 			if (n > 0) {
 				System.out.println("Data Inserted Successfully ID:" + n);
@@ -437,6 +451,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			throws ODataApplicationException {
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
+		bean.setOperation_name("DELETE_ENTIRY");
+		bean.setClass_name("DemoEntityProcessor");
 
 		// 1. Retrieve the entity set which belongs to the requested entity
 		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
@@ -470,7 +486,7 @@ public class DemoEntityProcessor implements EntityProcessor {
 				ID = rs.getInt("sr_no") + 1;
 			}
 			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
 			PreparedStatement pStmt = con.prepareStatement(query);
 			pStmt.setString(1, bean.getIp() + "");
 			pStmt.setString(2, bean.getHostname() + "");
@@ -481,6 +497,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 			pStmt.setInt(7, bean.getSr_no());
 			pStmt.setString(8, bean.getRequest_Method());
 			pStmt.setString(9, bean.getContent_type_body());
+			pStmt.setString(10, bean.getOperation_name());
+			pStmt.setString(11, bean.getClass_name());
 
 			int n = pStmt.executeUpdate();
 			if (n > 0) {

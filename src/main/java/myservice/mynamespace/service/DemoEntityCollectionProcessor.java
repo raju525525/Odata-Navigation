@@ -101,97 +101,206 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 	 * Example for navigation
 	 * http://localhost:8080/DemoService/DemoService.svc/Categories(3)/Products
 	 */
-	/*public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo,
+	/*
+	 * public void readEntityCollection(ODataRequest request, ODataResponse
+	 * response, UriInfo uriInfo, ContentType responseFormat) throws
+	 * ODataApplicationException, SerializerException { Date relativeTime = new
+	 * Date(); bean.setRequest_Method(request.getMethod() + "");
+	 * bean.setContent_type_body("Content-Type:" + responseFormat); EdmEntitySet
+	 * responseEdmEntitySet = null; // we'll need this to build // the
+	 * ContextURL EntityCollection responseEntityCollection = null; // we'll
+	 * need this to // set the response // body
+	 * 
+	 * // 1st retrieve the requested EntitySet from the uriInfo (representation
+	 * // of the parsed URI) List<UriResource> resourceParts =
+	 * uriInfo.getUriResourceParts(); int segmentCount = resourceParts.size();
+	 * 
+	 * UriResource uriResource = resourceParts.get(0); // in our example, the //
+	 * first segment is the // EntitySet if (!(uriResource instanceof
+	 * UriResourceEntitySet)) { throw new
+	 * ODataApplicationException("Only EntitySet is supported",
+	 * HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT); }
+	 * 
+	 * UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet)
+	 * uriResource; EdmEntitySet startEdmEntitySet =
+	 * uriResourceEntitySet.getEntitySet();
+	 * 
+	 * if (segmentCount == 1) { // this is the case for: //
+	 * DemoService/DemoService.svc/Categories responseEdmEntitySet =
+	 * startEdmEntitySet; // the response body is // built from the first //
+	 * (and only) entitySet
+	 * 
+	 * // 2nd: fetch the data from backend for this requested EntitySetName //
+	 * and deliver as EntitySet responseEntityCollection =
+	 * storage.readEntitySetData(startEdmEntitySet); } else if (segmentCount ==
+	 * 2) { // in case of navigation: // DemoService.svc/Categories(3)/Products
+	 * 
+	 * UriResource lastSegment = resourceParts.get(1); // in our example we //
+	 * don't support // more complex URIs if (lastSegment instanceof
+	 * UriResourceNavigation) { UriResourceNavigation uriResourceNavigation =
+	 * (UriResourceNavigation) lastSegment; EdmNavigationProperty
+	 * edmNavigationProperty = uriResourceNavigation.getProperty();
+	 * EdmEntityType targetEntityType = edmNavigationProperty.getType(); // from
+	 * Categories(1) to Products responseEdmEntitySet =
+	 * Util.getNavigationTargetEntitySet(startEdmEntitySet,
+	 * edmNavigationProperty);
+	 * 
+	 * // 2nd: fetch the data from backend // first fetch the entity where the
+	 * first segment of the URI // points to List<UriParameter> keyPredicates =
+	 * uriResourceEntitySet.getKeyPredicates(); // e.g. for
+	 * Categories(3)/Products we have to find the single // entity: Category
+	 * with ID 3 Entity sourceEntity = storage.readEntityData(startEdmEntitySet,
+	 * keyPredicates); // error handling for e.g. //
+	 * DemoService.svc/Categories(99)/Products if (sourceEntity == null) { throw
+	 * new ODataApplicationException("Entity not found.",
+	 * HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ROOT); } // then fetch
+	 * the entity collection where the entity navigates // to // note: we don't
+	 * need to check // uriResourceNavigation.isCollection(), // because we are
+	 * the EntityCollectionProcessor responseEntityCollection =
+	 * storage.getRelatedEntityCollection(sourceEntity, targetEntityType); } }
+	 * else { // this would be the case for e.g. //
+	 * Products(1)/Category/Products throw new
+	 * ODataApplicationException("Not supported",
+	 * HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT); }
+	 * 
+	 * // 3rd: create and configure a serializer ContextURL contextUrl =
+	 * ContextURL.with().entitySet(responseEdmEntitySet).build(); final String
+	 * id = request.getRawBaseUri() + "/" + responseEdmEntitySet.getName();
+	 * System.out.println("http.url : " + id);
+	 * bean.setRequest_Uri(request.getRawRequestUri());
+	 * 
+	 * EntityCollectionSerializerOptions opts =
+	 * EntityCollectionSerializerOptions.with().contextURL(contextUrl).id(id)
+	 * .build(); EdmEntityType edmEntityType =
+	 * responseEdmEntitySet.getEntityType();
+	 * 
+	 * ODataSerializer serializer = odata.createSerializer(responseFormat);
+	 * SerializerResult serializerResult =
+	 * serializer.entityCollection(this.srvMetadata, edmEntityType,
+	 * responseEntityCollection, opts);
+	 * 
+	 * // 4th: configure the response object: set the body, headers and status
+	 * // code Date nowTime = new Date(); long diffs = nowTime.getTime() -
+	 * relativeTime.getTime(); ; long dateandTimes = diffs / 1000;
+	 * bean.setTime_Diffirence(dateandTimes);
+	 * bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
+	 * 
+	 * Connection con = null; try { con = DBUtillocal.getConnection(); int ID =
+	 * 0; String querys = "select * from requesttracing"; Statement pstmt =
+	 * con.createStatement(); java.sql.ResultSet rs =
+	 * pstmt.executeQuery(querys); while (rs.next()) {
+	 * 
+	 * ID = rs.getInt("sr_no") + 1; } bean.setSr_no(ID); String query =
+	 * "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)"
+	 * ; PreparedStatement pStmt = con.prepareStatement(query);
+	 * pStmt.setString(1, bean.getIp() + ""); pStmt.setString(2,
+	 * bean.getHostname() + ""); pStmt.setString(3, bean.getDateand_Time() +
+	 * ""); pStmt.setLong(4, bean.getTime_Diffirence()); pStmt.setString(5,
+	 * bean.getRequest_Uri()); pStmt.setInt(6, bean.getResponse_Code());
+	 * pStmt.setInt(7, bean.getSr_no()); pStmt.setString(8,
+	 * bean.getRequest_Method() + ""); pStmt.setString(9,
+	 * bean.getContent_type_body()); int n = pStmt.executeUpdate(); if (n > 0) {
+	 * System.out.println("Data Inserted Successfully ID:" + n); }
+	 * 
+	 * } catch (SQLException e) { // TODO Auto-generated catch block
+	 * e.printStackTrace(); } finally { if (con != null) { try { con.close();
+	 * DBUtillocal.Close(); } catch (Exception e) {
+	 * System.out.println("exception in closing connection");
+	 * e.printStackTrace(); } } }
+	 * 
+	 * response.setContent(serializerResult.getContent());
+	 * response.setStatusCode(HttpStatusCode.OK.getStatusCode());
+	 * response.setHeader(HttpHeader.CONTENT_TYPE,
+	 * responseFormat.toContentTypeString());
+	 * 
+	 * }
+	 */
+
+	public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo,
 			ContentType responseFormat) throws ODataApplicationException, SerializerException {
+
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
 		bean.setContent_type_body("Content-Type:" + responseFormat);
-		EdmEntitySet responseEdmEntitySet = null; // we'll need this to build
-													// the ContextURL
-		EntityCollection responseEntityCollection = null; // we'll need this to
-															// set the response
-															// body
+		bean.setOperation_name("READ_ENTIRY");
+		bean.setClass_name("DemoEntityCollectionProcessor");
 
-		// 1st retrieve the requested EntitySet from the uriInfo (representation
-		// of the parsed URI)
-		List<UriResource> resourceParts = uriInfo.getUriResourceParts();
-		int segmentCount = resourceParts.size();
+		// 1st retrieve the requested EntitySet from the uriInfo
+		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
+		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
+		EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 
-		UriResource uriResource = resourceParts.get(0); // in our example, the
-														// first segment is the
-														// EntitySet
-		if (!(uriResource instanceof UriResourceEntitySet)) {
-			throw new ODataApplicationException("Only EntitySet is supported",
-					HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
-		}
+		// 2nd: fetch the data from backend for this requested EntitySetName
+		EntityCollection entityCollection = storage.readEntitySetData(edmEntitySet);
 
-		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) uriResource;
-		EdmEntitySet startEdmEntitySet = uriResourceEntitySet.getEntitySet();
+		// 3rd: apply System Query Options
+		// modify the result set according to the query options, specified by
+		// the end user
+		List<Entity> entityList = entityCollection.getEntities();
+		EntityCollection returnEntityCollection = new EntityCollection();
 
-		if (segmentCount == 1) { // this is the case for:
-									// DemoService/DemoService.svc/Categories
-			responseEdmEntitySet = startEdmEntitySet; // the response body is
-														// built from the first
-														// (and only) entitySet
-
-			// 2nd: fetch the data from backend for this requested EntitySetName
-			// and deliver as EntitySet
-			responseEntityCollection = storage.readEntitySetData(startEdmEntitySet);
-		} else if (segmentCount == 2) { // in case of navigation:
-										// DemoService.svc/Categories(3)/Products
-
-			UriResource lastSegment = resourceParts.get(1); // in our example we
-															// don't support
-															// more complex URIs
-			if (lastSegment instanceof UriResourceNavigation) {
-				UriResourceNavigation uriResourceNavigation = (UriResourceNavigation) lastSegment;
-				EdmNavigationProperty edmNavigationProperty = uriResourceNavigation.getProperty();
-				EdmEntityType targetEntityType = edmNavigationProperty.getType();
-				// from Categories(1) to Products
-				responseEdmEntitySet = Util.getNavigationTargetEntitySet(startEdmEntitySet, edmNavigationProperty);
-
-				// 2nd: fetch the data from backend
-				// first fetch the entity where the first segment of the URI
-				// points to
-				List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
-				// e.g. for Categories(3)/Products we have to find the single
-				// entity: Category with ID 3
-				Entity sourceEntity = storage.readEntityData(startEdmEntitySet, keyPredicates);
-				// error handling for e.g.
-				// DemoService.svc/Categories(99)/Products
-				if (sourceEntity == null) {
-					throw new ODataApplicationException("Entity not found.", HttpStatusCode.NOT_FOUND.getStatusCode(),
-							Locale.ROOT);
-				}
-				// then fetch the entity collection where the entity navigates
-				// to
-				// note: we don't need to check
-				// uriResourceNavigation.isCollection(),
-				// because we are the EntityCollectionProcessor
-				responseEntityCollection = storage.getRelatedEntityCollection(sourceEntity, targetEntityType);
+		// handle $count: return the original number of entities, ignore $top
+		// and $skip
+		CountOption countOption = uriInfo.getCountOption();
+		if (countOption != null) {
+			boolean isCount = countOption.getValue();
+			if (isCount) {
+				returnEntityCollection.setCount(entityList.size());
 			}
-		} else { // this would be the case for e.g.
-					// Products(1)/Category/Products
-			throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(),
-					Locale.ROOT);
 		}
 
-		// 3rd: create and configure a serializer
-		ContextURL contextUrl = ContextURL.with().entitySet(responseEdmEntitySet).build();
-		final String id = request.getRawBaseUri() + "/" + responseEdmEntitySet.getName();
-		System.out.println("http.url : " + id);
+		// handle $skip
+		SkipOption skipOption = uriInfo.getSkipOption();
+		if (skipOption != null) {
+			int skipNumber = skipOption.getValue();
+			if (skipNumber >= 0) {
+				if (skipNumber <= entityList.size()) {
+					entityList = entityList.subList(skipNumber, entityList.size());
+				} else {
+					// The client skipped all entities
+					entityList.clear();
+				}
+			} else {
+				throw new ODataApplicationException("Invalid value for $skip",
+						HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+			}
+		}
+
+		// handle $top
+		TopOption topOption = uriInfo.getTopOption();
+		if (topOption != null) {
+			int topNumber = topOption.getValue();
+			if (topNumber >= 0) {
+				if (topNumber <= entityList.size()) {
+					entityList = entityList.subList(0, topNumber);
+				} // else the client has requested more entities than available
+					// => return what we have
+			} else {
+				throw new ODataApplicationException("Invalid value for $top",
+						HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+			}
+		}
+
+		// after applying the query options, create EntityCollection based on
+		// the reduced list
+		for (Entity entity : entityList) {
+			returnEntityCollection.getEntities().add(entity);
+		}
+
+		// 4th: create a serializer based on the requested format (json)
+		ODataSerializer serializer = odata.createSerializer(responseFormat);
+
+		// and serialize the content: transform from the EntitySet object to
+		// InputStream
+		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
 		bean.setRequest_Uri(request.getRawRequestUri());
 
+		final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
 		EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().contextURL(contextUrl).id(id)
-				.build();
-		EdmEntityType edmEntityType = responseEdmEntitySet.getEntityType();
-
-		ODataSerializer serializer = odata.createSerializer(responseFormat);
-		SerializerResult serializerResult = serializer.entityCollection(this.srvMetadata, edmEntityType,
-				responseEntityCollection, opts);
-
-		// 4th: configure the response object: set the body, headers and status
-		// code
+				.count(countOption).build();
+		SerializerResult serializerResult = serializer.entityCollection(srvMetadata, edmEntityType,
+				returnEntityCollection, opts);
 		Date nowTime = new Date();
 		long diffs = nowTime.getTime() - relativeTime.getTime();
 		;
@@ -211,7 +320,7 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 				ID = rs.getInt("sr_no") + 1;
 			}
 			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
+			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
 			PreparedStatement pStmt = con.prepareStatement(query);
 			pStmt.setString(1, bean.getIp() + "");
 			pStmt.setString(2, bean.getHostname() + "");
@@ -222,6 +331,9 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 			pStmt.setInt(7, bean.getSr_no());
 			pStmt.setString(8, bean.getRequest_Method() + "");
 			pStmt.setString(9, bean.getContent_type_body());
+			pStmt.setString(10, bean.getOperation_name());
+			pStmt.setString(11, bean.getClass_name());
+
 			int n = pStmt.executeUpdate();
 			if (n > 0) {
 				System.out.println("Data Inserted Successfully ID:" + n);
@@ -242,145 +354,11 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 			}
 		}
 
+		// 5th: configure the response object: set the body, headers and status
+		// codez
 		response.setContent(serializerResult.getContent());
 		response.setStatusCode(HttpStatusCode.OK.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
-
-	}*/
-	
-	public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType responseFormat)
-            throws ODataApplicationException, SerializerException {
-		
-		Date relativeTime = new Date();
-		bean.setRequest_Method(request.getMethod() + "");
-		bean.setContent_type_body("Content-Type:" + responseFormat);
-
-// 1st retrieve the requested EntitySet from the uriInfo
-List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
-UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
-EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
-
-// 2nd: fetch the data from backend for this requested EntitySetName
-EntityCollection entityCollection = storage.readEntitySetData(edmEntitySet);
-
-// 3rd: apply System Query Options
-// modify the result set according to the query options, specified by the end user
-List<Entity> entityList = entityCollection.getEntities();
-EntityCollection returnEntityCollection = new EntityCollection();
-
-// handle $count: return the original number of entities, ignore $top and $skip
-CountOption countOption = uriInfo.getCountOption();
-if (countOption != null) {
-boolean isCount = countOption.getValue();
-if(isCount){
-returnEntityCollection.setCount(entityList.size());
-}
-}
-
-// handle $skip
-SkipOption skipOption = uriInfo.getSkipOption();
-if (skipOption != null) {
-int skipNumber = skipOption.getValue();
-if (skipNumber >= 0) {
-if(skipNumber <= entityList.size()) {
-entityList = entityList.subList(skipNumber, entityList.size());
-} else {
-// The client skipped all entities
-entityList.clear();
-}
-} else {
-throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-}
-}
-
-// handle $top
-TopOption topOption = uriInfo.getTopOption();
-if (topOption != null) {
-int topNumber = topOption.getValue();
-if (topNumber >= 0) {
-if(topNumber <= entityList.size()) {
-entityList = entityList.subList(0, topNumber);
-}  // else the client has requested more entities than available => return what we have
-} else {
-throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-}
-}
-
-// after applying the query options, create EntityCollection based on the reduced list
-for(Entity entity : entityList){
-returnEntityCollection.getEntities().add(entity);
-}
-
-// 4th: create a serializer based on the requested format (json)
-ODataSerializer serializer = odata.createSerializer(responseFormat);
-
-// and serialize the content: transform from the EntitySet object to InputStream
-EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
-bean.setRequest_Uri(request.getRawRequestUri());
-
-final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
-EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with()	
-                                        .contextURL(contextUrl)
-                                        .id(id)
-                                        .count(countOption)
-                                        .build();
-SerializerResult serializerResult = serializer.entityCollection(srvMetadata, edmEntityType,
-                                                returnEntityCollection, opts);
-Date nowTime = new Date();
-long diffs = nowTime.getTime() - relativeTime.getTime();
-;
-long dateandTimes = diffs / 1000;
-bean.setTime_Diffirence(dateandTimes);
-bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
-
-Connection con = null;
-try {
-	con = DBUtillocal.getConnection();
-	int ID = 0;
-	String querys = "select * from requesttracing";
-	Statement pstmt = con.createStatement();
-	java.sql.ResultSet rs = pstmt.executeQuery(querys);
-	while (rs.next()) {
-
-		ID = rs.getInt("sr_no") + 1;
 	}
-	bean.setSr_no(ID);
-	String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body) values(?,?,?,?,?,?,?,?,?)";
-	PreparedStatement pStmt = con.prepareStatement(query);
-	pStmt.setString(1, bean.getIp() + "");
-	pStmt.setString(2, bean.getHostname() + "");
-	pStmt.setString(3, bean.getDateand_Time() + "");
-	pStmt.setLong(4, bean.getTime_Diffirence());
-	pStmt.setString(5, bean.getRequest_Uri());
-	pStmt.setInt(6, bean.getResponse_Code());
-	pStmt.setInt(7, bean.getSr_no());
-	pStmt.setString(8, bean.getRequest_Method() + "");
-	pStmt.setString(9, bean.getContent_type_body());
-	int n = pStmt.executeUpdate();
-	if (n > 0) {
-		System.out.println("Data Inserted Successfully ID:" + n);
-	}
-
-} catch (SQLException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-} finally {
-	if (con != null) {
-		try {
-			con.close();
-			DBUtillocal.Close();
-		} catch (Exception e) {
-			System.out.println("exception in closing connection");
-			e.printStackTrace();
-		}
-	}
-}
-
-// 5th: configure the response object: set the body, headers and status code
-response.setContent(serializerResult.getContent());
-response.setStatusCode(HttpStatusCode.OK.getStatusCode());
-response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
-}
 
 }

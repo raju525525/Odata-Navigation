@@ -17,6 +17,7 @@ public class DBUtillocal {
 	static Properties prop = new Properties();
 	static ClassLoader loader = Thread.currentThread().getContextClassLoader();
 	static InputStream stream = loader.getResourceAsStream("/application.properties");
+
 	public static Connection getConnection() {
 		try {
 			try {
@@ -51,25 +52,28 @@ public class DBUtillocal {
 			e.printStackTrace();
 		}
 	}
-	
-	public static String readCollectionNames(Integer n){
-		if(n==1){
+
+	public static String readCollectionNames(Integer n) {
+		if (n == 1) {
 			collectionName = prop.getProperty("appconfig.collection");
 		}
-		if(n==2){
+		if (n == 2) {
 			collectionName = prop.getProperty("dataconf.collection");
 		}
-		 return collectionName;
-		
+		if (n == 3) {
+			collectionName = prop.getProperty("floorplan.collection");
+		}
+		return collectionName;
+
 	}
-	
+
 	public static void main(String[] args) {
-		List drivers = Collections.list(DriverManager.getDrivers());   
-		for(int i=0;i<drivers.size();i++){   
-		Driver driver = (Driver)drivers.get(i);   
-		String driverName = driver.getClass().getName();   
-		System.out.println("Driver "+i+":::"+driverName); 
-	}
+		List drivers = Collections.list(DriverManager.getDrivers());
+		for (int i = 0; i < drivers.size(); i++) {
+			Driver driver = (Driver) drivers.get(i);
+			String driverName = driver.getClass().getName();
+			System.out.println("Driver " + i + ":::" + driverName);
+		}
 	}
 
 }

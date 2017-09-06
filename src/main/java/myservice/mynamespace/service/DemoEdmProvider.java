@@ -56,6 +56,9 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 	public static final String ET_DATACONF_NAME = "Dataconf";
 	public static final FullQualifiedName ET_DATACONF_FQN = new FullQualifiedName(NAMESPACE, ET_DATACONF_NAME);
 
+	public static final String ET_FLOORPLAN_NAME = "Floorplan";
+	public static final FullQualifiedName ET_FLOORPLAN_FQN = new FullQualifiedName(NAMESPACE, ET_FLOORPLAN_NAME);
+
 	public static final String ET_CATEGORY_NAME = "Category";
 	public static final FullQualifiedName ET_CATEGORY_FQN = new FullQualifiedName(NAMESPACE, ET_CATEGORY_NAME);
 
@@ -64,6 +67,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 	public static final String ES_CATEGORIES_NAME = "Categories";
 	public static final String ES_APPCONFG_NAME = DBUtillocal.readCollectionNames(1);
 	public static final String ES_DATACONF_NAME = DBUtillocal.readCollectionNames(2);
+	public static final String ES_FLOORPLAN_NAME = DBUtillocal.readCollectionNames(3);
 
 	@Override
 	public CsdlEntityType getEntityType(FullQualifiedName entityTypeName) {
@@ -174,6 +178,44 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			System.out.println(Arrays.asList(propertyRef.getName()));
 
 		}
+		if (entityTypeName.equals(ET_FLOORPLAN_FQN)) {
+			// create EntityType properties
+			CsdlProperty id = new CsdlProperty().setName("APPID")
+					.setType(EdmPrimitiveTypeKind.Int32.getFullQualifiedName());
+			CsdlProperty moduleid = new CsdlProperty().setName("MODULEID")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty floorid = new CsdlProperty().setName("FPID")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty floorname = new CsdlProperty().setName("FPNAME")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty status = new CsdlProperty().setName("STATUS")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty floorconfg = new CsdlProperty().setName("FPCONFIG")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+
+			// create PropertyRef for Key element
+			CsdlPropertyRef propertyRef = new CsdlPropertyRef();
+			propertyRef.setName("APPID");
+
+			// navigation property: many-to-one, null not allowed (product must
+			// have a category)
+			/*
+			 * CsdlNavigationProperty navProp = new
+			 * CsdlNavigationProperty().setName("Category")
+			 * .setType(ET_CATEGORY_FQN).setNullable(false).setPartner(
+			 * "Products"); List<CsdlNavigationProperty> navPropList = new
+			 * ArrayList<CsdlNavigationProperty>(); navPropList.add(navProp);
+			 */
+
+			// configure EntityType
+			entityType = new CsdlEntityType();
+			entityType.setName(ET_FLOORPLAN_NAME);
+			entityType.setProperties(Arrays.asList(id, moduleid, floorid, floorname, status, floorconfg));
+			entityType.setKey(Arrays.asList(propertyRef));
+			System.out.println(Arrays.asList(propertyRef.getName()));
+			// entityType.setNavigationProperties(navPropList);
+
+		}
 
 		else if (entityTypeName.equals(ET_CATEGORY_FQN)) {
 			// create EntityType properties
@@ -257,6 +299,12 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 				entitySet.setName(ES_DATACONF_NAME);
 				entitySet.setType(ET_DATACONF_FQN);
 			}
+			if (entitySetName.equals(ES_FLOORPLAN_NAME)) {
+
+				entitySet = new CsdlEntitySet();
+				entitySet.setName(ES_FLOORPLAN_NAME);
+				entitySet.setType(ET_FLOORPLAN_FQN);
+			}
 
 			else if (entitySetName.equals(ES_CATEGORIES_NAME)) {
 
@@ -306,6 +354,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		entityTypes.add(getEntityType(ET_CATEGORY_FQN));
 		entityTypes.add(getEntityType(ET_APPCONFG_FQN));
 		entityTypes.add(getEntityType(ET_DATACONF_FQN));
+		entityTypes.add(getEntityType(ET_FLOORPLAN_FQN));
 		schema.setEntityTypes(entityTypes);
 
 		// add EntityContainer
@@ -327,6 +376,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		entitySets.add(getEntitySet(CONTAINER, ES_CATEGORIES_NAME));
 		entitySets.add(getEntitySet(CONTAINER, ES_APPCONFG_NAME));
 		entitySets.add(getEntitySet(CONTAINER, ES_DATACONF_NAME));
+		entitySets.add(getEntitySet(CONTAINER, ES_FLOORPLAN_NAME));
 
 		// create EntityContainer
 		CsdlEntityContainer entityContainer = new CsdlEntityContainer();
