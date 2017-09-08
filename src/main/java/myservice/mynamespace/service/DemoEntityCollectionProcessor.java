@@ -18,18 +18,29 @@
  */
 package myservice.mynamespace.service;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import org.apache.commons.codec.binary.Base64;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+import org.apache.olingo.client.api.ODataClient;
+import org.apache.olingo.client.api.communication.request.retrieve.ODataServiceDocumentRequest;
+import org.apache.olingo.client.core.ODataClientFactory;
+import org.apache.olingo.client.core.http.BasicAuthHttpClientFactory;
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
@@ -218,6 +229,47 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 
 	public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo,
 			ContentType responseFormat) throws ODataApplicationException, SerializerException {
+		
+
+		Map<String, List<String>> map = request.getAllHeaders();
+		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+			String key = entry.getKey();
+			for (String value : entry.getValue()) {
+				System.out.println(key+"----"+value);
+			}
+		}
+		
+		String name = "admin";
+		String password = "admin";
+		String authString = name + ":" + password;
+		System.out.println("auth string: " + authString);
+		byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
+		String authStringEnc = new String(authEncBytes);
+		System.out.println("Base64 encoded auth string: " + authStringEnc);
+		URL url = null;
+		try {
+			url = new URL(request.getRawRequestUri());
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		URLConnection urlConnection = null;
+		try {
+			urlConnection = url.openConnection();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		urlConnection.setRequestProperty("Authorization", "Basic " + authStringEnc);
+
+		
+		ODataClient client = ODataClientFactory.getClient();
+		// add the configuration here
+		client.getConfiguration().setHttpClientFactory(new BasicAuthHttpClientFactory("raju", "raju"));
+		// String iCrmServiceRoot = "https://example.dev/Authenticated/Service";
+		ODataServiceDocumentRequest odClientReq = client.getRetrieveRequestFactory()
+				.getServiceDocumentRequest(request.getRawRequestUri());
+		System.out.println(odClientReq.getURI() + "----------------");
 
 		Date relativeTime = new Date();
 		bean.setRequest_Method(request.getMethod() + "");
