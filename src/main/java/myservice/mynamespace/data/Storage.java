@@ -456,7 +456,7 @@ public class Storage {
 		Entity entity = new Entity();
 
 		appconfgList.clear();
-		int ID = 0;
+		String ID = null;
 		String Name = null;
 		String Description = null;
 
@@ -469,7 +469,7 @@ public class Storage {
 			java.sql.ResultSet rs = pstmt.executeQuery(query);
 			while (rs.next()) {
 
-				ID = rs.getInt("APPID");
+				ID = rs.getString("APPID");
 				Name = rs.getString("APPName");
 				Description = rs.getString("APPCONFIG");
 				final Entity e = new Entity().addProperty(new Property(null, "APPID", ValueType.PRIMITIVE, ID))
@@ -1353,6 +1353,7 @@ public class Storage {
 		// delete from db also
 		String keyPropertyName = extensionEntity.getProperty("APPID").getName();
 		String keyPropertyValue = String.valueOf(extensionEntity.getProperty("APPID").getValue());
+		keyPropertyValue = Storage.quote(keyPropertyValue);
 		java.sql.Connection connection = null;
 		try {
 			connection = DBUtillocal.getConnection();
@@ -1381,6 +1382,13 @@ public class Storage {
 
 	}
 
+	public static String quote(String s) {
+	    return new StringBuilder()
+	        .append('\'')
+	        .append(s)
+	        .append('\'')
+	        .toString();
+	}
 	private void deleteProduct(EdmEntityType edmEntityType, List<UriParameter> keyParams)
 			throws ODataApplicationException {
 		Entity extensionEntity = getProduct(edmEntityType, keyParams);

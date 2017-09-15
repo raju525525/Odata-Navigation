@@ -81,6 +81,10 @@ public class Util {
 	      // key
 	      String keyName = key.getName();
 	      String keyText = key.getText();
+	      
+	      keyText = keyText.substring(1, keyText.length() - 1);
+
+	      System.out.println(keyText);
 
 	      // note: below line doesn't consider: keyProp can be part of a complexType in V4
 	      // in such case, it would be required to access it via getKeyPropertyRef()

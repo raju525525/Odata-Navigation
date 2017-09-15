@@ -109,7 +109,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		if (entityTypeName.equals(ET_APPCONFG_FQN)) {
 			// create EntityType properties
 			CsdlProperty id = new CsdlProperty().setName("APPID")
-					.setType(EdmPrimitiveTypeKind.Int32.getFullQualifiedName());
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
 			CsdlProperty name = new CsdlProperty().setName("APPNAME")
 					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
 			CsdlProperty description = new CsdlProperty().setName("APPCONFIG")

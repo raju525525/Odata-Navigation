@@ -32,8 +32,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.swing.text.AbstractDocument.Content;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.entity.ContentType;
 import org.apache.olingo.commons.api.edmx.EdmxReference;
 import org.apache.olingo.commons.api.http.HttpHeader;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
@@ -80,122 +82,130 @@ public class DemoServlet extends HttpServlet {
 
 			String path = authHeader;
 			// Split path into segments
+			try {
 			String array[] = path.split("Basic");
-			// Grab the last segment
-			String delimiter = "";
-			/*
-			 * String result = String.join(delimiter, array).trim();
-			 * System.out.println(result);
-			 */
+				// Grab the last segment
+				String delimiter = "";
+				/*
+				 * String result = String.join(delimiter, array).trim();
+				 * System.out.println(result);
+				 */
 
-			if (authHeader != null) {
-				StringTokenizer st = new StringTokenizer(authHeader);
-				if (st.hasMoreTokens()) {
-					String basic = st.nextToken();
+				if (authHeader != null) {
+					StringTokenizer st = new StringTokenizer(authHeader);
+					if (st.hasMoreTokens()) {
+						String basic = st.nextToken();
 
-					if (basic.equalsIgnoreCase("Basic")) {
-						try {
-							String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
-							System.out.println("Credentials: " + credentials);
-							int p = credentials.indexOf(":");
-							if (p != -1) {
-								String login = credentials.substring(0, p).trim();
-								String password = credentials.substring(p + 1).trim();
+						if (basic.equalsIgnoreCase("Basic")) {
+							try {
+								String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+								System.out.println("Credentials: " + credentials);
+								int p = credentials.indexOf(":");
+								if (p != -1) {
+									String login = credentials.substring(0, p).trim();
+									String password = credentials.substring(p + 1).trim();
 
-								boolean existRnt = selectUserTable(login, req);
-								if (existRnt == true) {
+									boolean existRnt = selectUserTable(login, req);
+									if (existRnt == true) {
 
-									String test_passwd = password;
-									String test_hash = req.getAttribute("DBPwd") + "";
-									boolean checkPassword = checkPassword(test_passwd, test_hash);
-									if (checkPassword) {
-										System.out.println("Passwords Match");
-										HttpSession session = req.getSession(true);
-										String result = String.join(delimiter, array).trim();
-										session.setAttribute("token", result);
-										System.out.println(session.getAttribute("token"));
-										Storage storage = (Storage) session.getAttribute(Storage.class.getName());
-										if (storage == null) {
-											storage = new Storage();
-											session.setAttribute(Storage.class.getName(), storage);
+										String test_passwd = password;
+										String test_hash = req.getAttribute("DBPwd") + "";
+										boolean checkPassword = checkPassword(test_passwd, test_hash);
+										if (checkPassword) {
+											System.out.println("Passwords Match");
+											HttpSession session = req.getSession(true);
+											String result = String.join(delimiter, array).trim();
+											session.setAttribute("token", result);
+											System.out.println(session.getAttribute("token"));
+											Storage storage = (Storage) session.getAttribute(Storage.class.getName());
+											if (storage == null) {
+												storage = new Storage();
+												session.setAttribute(Storage.class.getName(), storage);
+											}
+
+											// create odata handler and
+											// configure it
+											// with EdmProvider and
+											// Processor
+											OData odata = OData.newInstance();
+											ServiceMetadata edm = odata.createServiceMetadata(new DemoEdmProvider(),
+													new ArrayList<EdmxReference>());
+											ODataHttpHandler handler = odata.createHandler(edm);
+											handler.register(new DemoEntityCollectionProcessor(storage));
+											handler.register(new DemoEntityProcessor(storage));
+											handler.register(new DemoPrimitiveProcessor(storage));
+
+											// let the handler do the work
+											handler.process(req, resp);
+
+										} else {
+											System.out.println("Passwords do not match");
+
+											resp.setContentType("text/xml");
+											PrintWriter out = resp.getWriter();
+											out.print("<html><body>");
+											out.print("<b>Passwords do not match</b>");
+											out.print("</body></html>");
+
 										}
-
-										// create odata handler and configure it
-										// with EdmProvider and
-										// Processor
-										OData odata = OData.newInstance();
-										ServiceMetadata edm = odata.createServiceMetadata(new DemoEdmProvider(),
-												new ArrayList<EdmxReference>());
-										ODataHttpHandler handler = odata.createHandler(edm);
-										handler.register(new DemoEntityCollectionProcessor(storage));
-										handler.register(new DemoEntityProcessor(storage));
-										handler.register(new DemoPrimitiveProcessor(storage));
-
-										// let the handler do the work
-										handler.process(req, resp);
-
 									} else {
-										System.out.println("Passwords do not match");
-
-										resp.setContentType("text/xml");
+										System.out.println("user Not exsist!");
+										resp.setContentType("text/html");
 										PrintWriter out = resp.getWriter();
 										out.print("<html><body>");
-										out.print("<b>Passwords do not match</b>");
+										out.print("<b>user Not exsist!</b>");
 										out.print("</body></html>");
 
 									}
+
+									System.out.printf(login, password);
 								} else {
-									System.out.println("user Not exsist!");
+									System.out.println("Invalid authentication token");
 									resp.setContentType("text/html");
 									PrintWriter out = resp.getWriter();
 									out.print("<html><body>");
-									out.print("<b>user Not exsist!</b>");
+									out.print("<b>Invalid authentication token</b>");
 									out.print("</body></html>");
-
 								}
-
-								System.out.printf(login, password);
-							} else {
-								System.out.println("Invalid authentication token");
-								resp.setContentType("text/html");
-								PrintWriter out = resp.getWriter();
-								out.print("<html><body>");
-								out.print("<b>Invalid authentication token</b>");
-								out.print("</body></html>");
+							} catch (UnsupportedEncodingException e) {
+								e.getStackTrace();
 							}
-						} catch (UnsupportedEncodingException e) {
-							e.getStackTrace();
 						}
 					}
 				}
+
+				/*
+				 * HttpServletRequest httpRequest = (HttpServletRequest)
+				 * request; Enumeration<String> headerNames =
+				 * httpRequest.getHeaderNames();
+				 * 
+				 * if (headerNames != null) { while
+				 * (headerNames.hasMoreElements()) {
+				 * System.out.println("Header: " +
+				 * httpRequest.getHeader(headerNames.nextElement())); } }
+				 */
+
+				/*
+				 * HttpSession session = req.getSession(true); Storage storage =
+				 * (Storage) session.getAttribute(Storage.class.getName()); if
+				 * (storage == null) { storage = new Storage();
+				 * session.setAttribute(Storage.class.getName(), storage); }
+				 * 
+				 * // create odata handler and configure it with EdmProvider and
+				 * // Processor OData odata = OData.newInstance();
+				 * ServiceMetadata edm = odata.createServiceMetadata(new
+				 * DemoEdmProvider(), new ArrayList<EdmxReference>());
+				 * ODataHttpHandler handler = odata.createHandler(edm);
+				 * handler.register(new DemoEntityCollectionProcessor(storage));
+				 * handler.register(new DemoEntityProcessor(storage));
+				 * handler.register(new DemoPrimitiveProcessor(storage));
+				 * 
+				 * // let the handler do the work handler.process(req, resp);
+				 */
+			} catch (Exception e) {
+				resp.setContentType(HttpHeader.CONTENT_TYPE);
+				resp.setStatus(HttpStatusCode.UNAUTHORIZED.getStatusCode());
 			}
-
-			/*
-			 * HttpServletRequest httpRequest = (HttpServletRequest) request;
-			 * Enumeration<String> headerNames = httpRequest.getHeaderNames();
-			 * 
-			 * if (headerNames != null) { while (headerNames.hasMoreElements())
-			 * { System.out.println("Header: " +
-			 * httpRequest.getHeader(headerNames.nextElement())); } }
-			 */
-
-			/*
-			 * HttpSession session = req.getSession(true); Storage storage =
-			 * (Storage) session.getAttribute(Storage.class.getName()); if
-			 * (storage == null) { storage = new Storage();
-			 * session.setAttribute(Storage.class.getName(), storage); }
-			 * 
-			 * // create odata handler and configure it with EdmProvider and //
-			 * Processor OData odata = OData.newInstance(); ServiceMetadata edm
-			 * = odata.createServiceMetadata(new DemoEdmProvider(), new
-			 * ArrayList<EdmxReference>()); ODataHttpHandler handler =
-			 * odata.createHandler(edm); handler.register(new
-			 * DemoEntityCollectionProcessor(storage)); handler.register(new
-			 * DemoEntityProcessor(storage)); handler.register(new
-			 * DemoPrimitiveProcessor(storage));
-			 * 
-			 * // let the handler do the work handler.process(req, resp);
-			 */
 		} catch (RuntimeException e) {
 			LOG.error("Server Error occurred in DemoServlet", e);
 			throw new ServletException(e);
