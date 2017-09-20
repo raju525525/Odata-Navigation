@@ -103,29 +103,32 @@
 			<version>4.2.0</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-	<!-- 	<dependency>
+		<!-- <dependency> <groupId>com.google.guava</groupId> <artifactId>guava</artifactId> 
+			<version>10.0.1</version> </dependency> -->
+		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>10.0.1</version>
-		</dependency> -->
-<dependency>
-   <groupId>com.google.guava</groupId>
-   <artifactId>guava</artifactId>
-   <version>18.0</version>
-</dependency>
-<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto -->
-<dependency>
-    <groupId>org.springframework.security</groupId>
-    <artifactId>spring-security-crypto</artifactId>
-    <version>3.1.0.RELEASE</version>
-</dependency>
-<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-config -->
-<dependency>
-    <groupId>org.springframework.security</groupId>
-    <artifactId>spring-security-config</artifactId>
-    <version>3.2.0.RELEASE</version>
-</dependency>
+			<version>18.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+			<version>3.1.0.RELEASE</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-config -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+			<version>3.2.0.RELEASE</version>
+		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.hibersap/com.sap.conn.jco.sapjco3 -->
+		<dependency>
+			<groupId>org.hibersap</groupId>
+			<artifactId>com.sap.conn.jco.sapjco3</artifactId>
+			<version>3.0.0</version>
+		</dependency>
 
 
 	</dependencies>

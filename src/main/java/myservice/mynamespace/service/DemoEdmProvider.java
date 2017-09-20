@@ -142,7 +142,7 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		if (entityTypeName.equals(ET_DATACONF_FQN)) {
 			// create EntityType properties
 			CsdlProperty MODULEID = new CsdlProperty().setName("MODULEID")
-					.setType(EdmPrimitiveTypeKind.Int32.getFullQualifiedName());
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
 
 			CsdlProperty DPID = new CsdlProperty().setName("DPID")
 					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
@@ -174,14 +174,17 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			entityType.setName(ET_DATACONF_NAME);
 			entityType.setProperties(
 					Arrays.asList(MODULEID, DPID, DATACATEGORY, ZUSAGE, DATAFORMAT, DELTATOKEN, PAGESIZE, LOADMORE));
-			entityType.setKey(Arrays.asList(propertyRef));
+			//entityType.setKey(Arrays.asList(propertyRef));
+			entityType.setKey(Arrays.asList(
+			          new CsdlPropertyRef().setName("MODULEID"),
+			          new CsdlPropertyRef().setName("DPID")));
 			System.out.println(Arrays.asList(propertyRef.getName()));
 
 		}
 		if (entityTypeName.equals(ET_FLOORPLAN_FQN)) {
 			// create EntityType properties
 			CsdlProperty id = new CsdlProperty().setName("APPID")
-					.setType(EdmPrimitiveTypeKind.Int32.getFullQualifiedName());
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
 			CsdlProperty moduleid = new CsdlProperty().setName("MODULEID")
 					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
 			CsdlProperty floorid = new CsdlProperty().setName("FPID")
@@ -212,6 +215,12 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			entityType.setName(ET_FLOORPLAN_NAME);
 			entityType.setProperties(Arrays.asList(id, moduleid, floorid, floorname, status, floorconfg));
 			entityType.setKey(Arrays.asList(propertyRef));
+			
+			entityType.setKey(Arrays.asList(
+			          new CsdlPropertyRef().setName("APPID"),
+			          new CsdlPropertyRef().setName("MODULEID"),
+			          new CsdlPropertyRef().setName("FPID")));
+			
 			System.out.println(Arrays.asList(propertyRef.getName()));
 			// entityType.setNavigationProperties(navPropList);
 

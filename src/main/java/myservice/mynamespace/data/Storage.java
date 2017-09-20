@@ -268,7 +268,7 @@ public class Storage {
 		Entity entity = new Entity();
 		// FPNAME STATUS FPCONFIG
 		floorplanList.clear();
-		int ID = 0;
+		String ID = null;
 		String moduleid = null;
 		String fid = null;
 		String fName = null;
@@ -284,7 +284,7 @@ public class Storage {
 			java.sql.ResultSet rs = pstmt.executeQuery(query);
 			try {
 				while (rs.next()) {
-					ID = rs.getInt("APPID");
+					ID = rs.getString("APPID");
 					moduleid = rs.getString("MODULEID");
 					fid = rs.getString("FPID");
 					fName = rs.getString("FPNAME");
@@ -395,7 +395,7 @@ public class Storage {
 
 		Entity entity = new Entity();
 		dataconfgList.clear();
-		int moduleID = 0;
+		String moduleID = null;
 		String dpID = null;
 		String dataCategory = null;
 		String zusage = null;
@@ -412,7 +412,7 @@ public class Storage {
 			Statement pstmt = connection.createStatement();
 			java.sql.ResultSet rs = pstmt.executeQuery(query);
 			while (rs.next()) {
-				moduleID = rs.getInt("MODULEID");
+				moduleID = rs.getString("MODULEID");
 				dpID = rs.getString("DPID");
 				dataCategory = rs.getString("DATACATEGORY");
 				zusage = rs.getString("ZUSAGE");
@@ -1277,6 +1277,7 @@ public class Storage {
 		// delete from db also
 		String keyPropertyName = extensionEntity.getProperty("APPID").getName();
 		String keyPropertyValue = String.valueOf(extensionEntity.getProperty("APPID").getValue());
+		keyPropertyValue=Storage.quote(keyPropertyValue);
 		java.sql.Connection connection = null;
 		try {
 			connection = DBUtillocal.getConnection();
@@ -1315,6 +1316,7 @@ public class Storage {
 		// delete from db also
 		String keyPropertyName = extensionEntity.getProperty("MODULEID").getName();
 		String keyPropertyValue = String.valueOf(extensionEntity.getProperty("MODULEID").getValue());
+		keyPropertyValue = Storage.quote(keyPropertyValue);
 		java.sql.Connection connection = null;
 		try {
 			connection = DBUtillocal.getConnection();
