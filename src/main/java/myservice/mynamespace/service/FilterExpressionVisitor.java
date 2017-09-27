@@ -19,7 +19,7 @@
 package myservice.mynamespace.service;
 
 import java.util.List;
-import java.util.Locale;
+import java.util.Locale;	
 
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.EdmEnumType;
@@ -27,7 +27,6 @@ import org.apache.olingo.commons.api.edm.EdmType;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.commons.core.edm.primitivetype.EdmString;
 import org.apache.olingo.server.api.ODataApplicationException;
-import org.apache.olingo.server.api.uri.UriInfoResource;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourcePrimitiveProperty;
 import org.apache.olingo.server.api.uri.queryoption.expression.BinaryOperatorKind;

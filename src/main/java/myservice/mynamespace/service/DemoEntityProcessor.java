@@ -61,6 +61,7 @@ import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.apache.olingo.server.api.uri.UriResourceNavigation;
 
 import myservice.mynamespace.data.DBUtillocal;
+import myservice.mynamespace.data.ODataServiceTrace;
 import myservice.mynamespace.data.Storage;
 import myservice.mynamespace.util.TracingBean;
 import myservice.mynamespace.util.Util;
@@ -111,8 +112,6 @@ public class DemoEntityProcessor implements EntityProcessor {
 		bean.setContent_type_body("Content-Type:" + responseFormat);
 		bean.setOperation_name("READ_ENTIRY");
 		bean.setClass_name("DemoEntityProcessor");
-
-
 
 		EdmEntityType responseEdmEntityType = null; // we'll need this to build
 													// the ContextURL
@@ -207,55 +206,13 @@ public class DemoEntityProcessor implements EntityProcessor {
 		// 4. configure the response object
 		Date nowTime = new Date();
 		long diffs = nowTime.getTime() - relativeTime.getTime();
-		;
 		long dateandTimes = diffs / 1000;
 		bean.setTime_Diffirence(dateandTimes);
 		bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
 
-		Connection con = null;
-		try {
-			con = DBUtillocal.getConnection();
-			int ID = 0;
-			String querys = "select * from requesttracing";
-			Statement pstmt = con.createStatement();
-			java.sql.ResultSet rs = pstmt.executeQuery(querys);
-			while (rs.next()) {
+		// Tracing inserertion Code
+		ODataServiceTrace.tracingMethod(bean);
 
-				ID = rs.getInt("sr_no") + 1;
-			}
-			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
-			PreparedStatement pStmt = con.prepareStatement(query);
-			pStmt.setString(1, bean.getIp() + "");
-			pStmt.setString(2, bean.getHostname() + "");
-			pStmt.setString(3, bean.getDateand_Time() + "");
-			pStmt.setLong(4, bean.getTime_Diffirence());
-			pStmt.setString(5, bean.getRequest_Uri());
-			pStmt.setInt(6, bean.getResponse_Code());
-			pStmt.setInt(7, bean.getSr_no());
-			pStmt.setString(8, bean.getRequest_Method() + "");
-			pStmt.setString(9, bean.getContent_type_body());
-			pStmt.setString(10, bean.getOperation_name());
-			pStmt.setString(11, bean.getClass_name());
-			int n = pStmt.executeUpdate();
-			if (n > 0) {
-				System.out.println("Data Inserted Successfully ID:" + n);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			if (con != null) {
-				try {
-					con.close();
-					DBUtillocal.Close();
-				} catch (Exception e) {
-					System.out.println("exception in closing connection");
-					e.printStackTrace();
-				}
-			}
-		}
 		response.setContent(serializerResult.getContent());
 		response.setStatusCode(HttpStatusCode.OK.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
@@ -272,7 +229,6 @@ public class DemoEntityProcessor implements EntityProcessor {
 		bean.setOperation_name("CREAT_ENTIRY");
 		bean.setClass_name("DemoEntityProcessor");
 
-
 		// 1. Retrieve the entity type from the URI
 		EdmEntitySet edmEntitySet = Util.getEdmEntitySet(uriInfo);
 		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
@@ -285,7 +241,8 @@ public class DemoEntityProcessor implements EntityProcessor {
 		Entity requestEntity = result.getEntity();
 		// 2.2 do the creation in backend, which returns the newly created
 		// entity
-		//System.out.println("Content-Type:" + requestFormat + "\n" + requestEntity);
+		// System.out.println("Content-Type:" + requestFormat + "\n" +
+		// requestEntity);
 		bean.setContent_type_body("Content-Type:" + requestFormat + "\n" + requestEntity);
 
 		Entity createdEntity = storage.createEntityData(edmEntitySet, requestEntity);
@@ -304,55 +261,13 @@ public class DemoEntityProcessor implements EntityProcessor {
 		// 4. configure the response object
 		Date nowTime = new Date();
 		long diffs = nowTime.getTime() - relativeTime.getTime();
-		;
 		long dateandTimes = diffs / 1000;
 		bean.setTime_Diffirence(dateandTimes);
 		bean.setResponse_Code(HttpStatusCode.CREATED.getStatusCode());
 
-		Connection con = null;
-		try {
-			con = DBUtillocal.getConnection();
-			int ID = 0;
-			String querys = "select * from requesttracing";
-			Statement pstmt = con.createStatement();
-			java.sql.ResultSet rs = pstmt.executeQuery(querys);
-			while (rs.next()) {
+		// Tracing inserertion Code
+		ODataServiceTrace.tracingMethod(bean);
 
-				ID = rs.getInt("sr_no") + 1;
-			}
-			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
-			PreparedStatement pStmt = con.prepareStatement(query);
-			pStmt.setString(1, bean.getIp() + "");
-			pStmt.setString(2, bean.getHostname() + "");
-			pStmt.setString(3, bean.getDateand_Time() + "");
-			pStmt.setLong(4, bean.getTime_Diffirence());
-			pStmt.setString(5, bean.getRequest_Uri());
-			pStmt.setInt(6, bean.getResponse_Code());
-			pStmt.setInt(7, bean.getSr_no());
-			pStmt.setString(8, bean.getRequest_Method());
-			pStmt.setString(9, bean.getContent_type_body());
-			pStmt.setString(10, bean.getOperation_name());
-			pStmt.setString(11, bean.getClass_name());
-			int n = pStmt.executeUpdate();
-			if (n > 0) {
-				System.out.println("Data Inserted Successfully ID:" + n);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			if (con != null) {
-				try {
-					con.close();
-					DBUtillocal.Close();
-				} catch (Exception e) {
-					System.out.println("exception in closing connection");
-					e.printStackTrace();
-				}
-			}
-		}
 		response.setContent(serializedResponse.getContent());
 		response.setStatusCode(HttpStatusCode.CREATED.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
@@ -395,55 +310,12 @@ public class DemoEntityProcessor implements EntityProcessor {
 		// 3. configure the response object
 		Date nowTime = new Date();
 		long diffs = nowTime.getTime() - relativeTime.getTime();
-		;
 		long dateandTimes = diffs / 1000;
 		bean.setTime_Diffirence(dateandTimes);
 		bean.setResponse_Code(HttpStatusCode.NO_CONTENT.getStatusCode());
 
-		Connection con = null;
-		try {
-			con = DBUtillocal.getConnection();
-			int ID = 0;
-			String querys = "select * from requesttracing";
-			Statement pstmt = con.createStatement();
-			java.sql.ResultSet rs = pstmt.executeQuery(querys);
-			while (rs.next()) {
-
-				ID = rs.getInt("sr_no") + 1;
-			}
-			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
-			PreparedStatement pStmt = con.prepareStatement(query);
-			pStmt.setString(1, bean.getIp() + "");
-			pStmt.setString(2, bean.getHostname() + "");
-			pStmt.setString(3, bean.getDateand_Time() + "");
-			pStmt.setLong(4, bean.getTime_Diffirence());
-			pStmt.setString(5, bean.getRequest_Uri());
-			pStmt.setInt(6, bean.getResponse_Code());
-			pStmt.setInt(7, bean.getSr_no());
-			pStmt.setString(8, bean.getRequest_Method());
-			pStmt.setString(9, bean.getContent_type_body());
-			pStmt.setString(10, bean.getOperation_name());
-			pStmt.setString(11, bean.getClass_name());
-			int n = pStmt.executeUpdate();
-			if (n > 0) {
-				System.out.println("Data Inserted Successfully ID:" + n);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			if (con != null) {
-				try {
-					con.close();
-					DBUtillocal.Close();
-				} catch (Exception e) {
-					System.out.println("exception in closing connection");
-					e.printStackTrace();
-				}
-			}
-		}
+		// Tracing inserertion Code
+		ODataServiceTrace.tracingMethod(bean);
 		response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
 	}
 
@@ -469,56 +341,12 @@ public class DemoEntityProcessor implements EntityProcessor {
 		// 3. configure the response object
 		Date nowTime = new Date();
 		long diffs = nowTime.getTime() - relativeTime.getTime();
-		;
 		long dateandTimes = diffs / 1000;
 		bean.setTime_Diffirence(dateandTimes);
 		bean.setResponse_Code(HttpStatusCode.NO_CONTENT.getStatusCode());
+		// Tracing inserertion Code
+		ODataServiceTrace.tracingMethod(bean);
 
-		Connection con = null;
-		try {
-			con = DBUtillocal.getConnection();
-			int ID = 0;
-			String querys = "select * from requesttracing";
-			Statement pstmt = con.createStatement();
-			java.sql.ResultSet rs = pstmt.executeQuery(querys);
-			while (rs.next()) {
-
-				ID = rs.getInt("sr_no") + 1;
-			}
-			bean.setSr_no(ID);
-			String query = "insert into requesttracing(ip,hostname,dateand_Time,time_Diffirence,request_Uri,response_Code,sr_no,request_Method,content_type_body,operation_name,class_name) values(?,?,?,?,?,?,?,?,?,?,?)";
-			PreparedStatement pStmt = con.prepareStatement(query);
-			pStmt.setString(1, bean.getIp() + "");
-			pStmt.setString(2, bean.getHostname() + "");
-			pStmt.setString(3, bean.getDateand_Time() + "");
-			pStmt.setLong(4, bean.getTime_Diffirence());
-			pStmt.setString(5, bean.getRequest_Uri());
-			pStmt.setInt(6, bean.getResponse_Code());
-			pStmt.setInt(7, bean.getSr_no());
-			pStmt.setString(8, bean.getRequest_Method());
-			pStmt.setString(9, bean.getContent_type_body());
-			pStmt.setString(10, bean.getOperation_name());
-			pStmt.setString(11, bean.getClass_name());
-
-			int n = pStmt.executeUpdate();
-			if (n > 0) {
-				System.out.println("Data Inserted Successfully ID:" + n);
-			}
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			if (con != null) {
-				try {
-					con.close();
-					DBUtillocal.Close();
-				} catch (Exception e) {
-					System.out.println("exception in closing connection");
-					e.printStackTrace();
-				}
-			}
-		}
 		response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
 	}
 }

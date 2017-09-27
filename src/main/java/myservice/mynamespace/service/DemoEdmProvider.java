@@ -62,9 +62,17 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 	public static final String ET_CATEGORY_NAME = "Category";
 	public static final FullQualifiedName ET_CATEGORY_FQN = new FullQualifiedName(NAMESPACE, ET_CATEGORY_NAME);
 
+	public static final String ET_ZEMP_NAME = "Zemptable";
+	public static final FullQualifiedName ET_ZEMP_FQN = new FullQualifiedName(NAMESPACE, ET_ZEMP_NAME);
+
+	public static final String ET_DP_NAME = "Dpconfig";
+	public static final FullQualifiedName ET_DP_FQN = new FullQualifiedName(NAMESPACE, ET_DP_NAME);
+
 	// Entity Set Names
 	public static final String ES_PRODUCTS_NAME = "Products";
 	public static final String ES_CATEGORIES_NAME = "Categories";
+	public static final String ES_ZEMP_NAME = "Zemptable";
+	public static final String ES_DP_NAME = "Dpconfig";
 	public static final String ES_APPCONFG_NAME = DBUtillocal.readCollectionNames(1);
 	public static final String ES_DATACONF_NAME = DBUtillocal.readCollectionNames(2);
 	public static final String ES_FLOORPLAN_NAME = DBUtillocal.readCollectionNames(3);
@@ -174,10 +182,9 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			entityType.setName(ET_DATACONF_NAME);
 			entityType.setProperties(
 					Arrays.asList(MODULEID, DPID, DATACATEGORY, ZUSAGE, DATAFORMAT, DELTATOKEN, PAGESIZE, LOADMORE));
-			//entityType.setKey(Arrays.asList(propertyRef));
-			entityType.setKey(Arrays.asList(
-			          new CsdlPropertyRef().setName("MODULEID"),
-			          new CsdlPropertyRef().setName("DPID")));
+			// entityType.setKey(Arrays.asList(propertyRef));
+			entityType.setKey(
+					Arrays.asList(new CsdlPropertyRef().setName("MODULEID"), new CsdlPropertyRef().setName("DPID")));
 			System.out.println(Arrays.asList(propertyRef.getName()));
 
 		}
@@ -215,14 +222,44 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			entityType.setName(ET_FLOORPLAN_NAME);
 			entityType.setProperties(Arrays.asList(id, moduleid, floorid, floorname, status, floorconfg));
 			entityType.setKey(Arrays.asList(propertyRef));
-			
-			entityType.setKey(Arrays.asList(
-			          new CsdlPropertyRef().setName("APPID"),
-			          new CsdlPropertyRef().setName("MODULEID"),
-			          new CsdlPropertyRef().setName("FPID")));
-			
+
+			entityType.setKey(Arrays.asList(new CsdlPropertyRef().setName("APPID"),
+					new CsdlPropertyRef().setName("MODULEID"), new CsdlPropertyRef().setName("FPID")));
+
 			System.out.println(Arrays.asList(propertyRef.getName()));
 			// entityType.setNavigationProperties(navPropList);
+
+		}
+
+		if (entityTypeName.equals(ET_DP_FQN)) {
+			// create EntityType properties
+			CsdlProperty moduleID = new CsdlProperty().setName("MODULEID")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty dataProvider = new CsdlProperty().setName("DATAPROVIDER")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty fieldName = new CsdlProperty().setName("FIELDNAME")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty apiName = new CsdlProperty().setName("APINAME")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty parameterName = new CsdlProperty().setName("PARAMETERNAME")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty status = new CsdlProperty().setName("STATUS")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty dpConfig = new CsdlProperty().setName("DPCONFIG")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty isKey = new CsdlProperty().setName("ISKEY")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+
+			CsdlPropertyRef propertyRef = new CsdlPropertyRef();
+			propertyRef.setName("MODULEID");
+			entityType = new CsdlEntityType();
+			entityType.setName(ET_DP_NAME);
+			entityType.setProperties(Arrays.asList(moduleID, dataProvider, fieldName, apiName, status, parameterName,
+					status, dpConfig, isKey));
+			entityType.setKey(Arrays.asList(propertyRef));
+			entityType.setKey(Arrays.asList(new CsdlPropertyRef().setName("MODULEID"),
+					new CsdlPropertyRef().setName("DATAPROVIDER"), new CsdlPropertyRef().setName("FIELDNAME")));
+			System.out.println(Arrays.asList(propertyRef.getName()));
 
 		}
 
@@ -249,6 +286,37 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 			entityType.setProperties(Arrays.asList(id, name));
 			entityType.setKey(Arrays.asList(propertyRef));
 			entityType.setNavigationProperties(navPropList);
+		}
+
+		else if (entityTypeName.equals(ET_ZEMP_FQN)) {
+			CsdlProperty zeNo = new CsdlProperty().setName("ZENO")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty zeName = new CsdlProperty().setName("ZENAME")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty zeader = new CsdlProperty().setName("ZEADR")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty zemSalary = new CsdlProperty().setName("ZEMPSALA")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			CsdlProperty zemDob = new CsdlProperty().setName("ZEMPDOB")
+					.setType(EdmPrimitiveTypeKind.String.getFullQualifiedName());
+			/*
+			 * CsdlPropertyRef propertyRef = new CsdlPropertyRef();
+			 * propertyRef.setName("ZENO"); entityType = new CsdlEntityType();
+			 * entityType.setName(ET_ZEMP_NAME);
+			 * entityType.setProperties(Arrays.asList(zeNo, zeName,
+			 * zeader,zemSalary,zemDob));
+			 * entityType.setKey(Arrays.asList(propertyRef));
+			 * System.out.println(Arrays.asList(propertyRef.getName()));
+			 */
+			CsdlPropertyRef propertyRef = new CsdlPropertyRef();
+			propertyRef.setName("ZENO");
+			entityType = new CsdlEntityType();
+			entityType.setName(ET_ZEMP_NAME);
+			entityType.setProperties(Arrays.asList(zeNo, zeName, zeader, zemSalary, zemDob));
+			entityType.setKey(Arrays.asList(propertyRef));
+			System.out.println(Arrays.asList(propertyRef.getName()));
+			// entityType.setNavigationProperties(navPropList);
+
 		}
 
 		return entityType;
@@ -332,6 +400,22 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 				navPropBindingList.add(navPropBinding);
 				entitySet.setNavigationPropertyBindings(navPropBindingList);
 			}
+
+			else if (entitySetName.equals(ES_ZEMP_NAME)) {
+
+				entitySet = new CsdlEntitySet();
+				entitySet.setName(ES_ZEMP_NAME);
+				entitySet.setType(ET_ZEMP_FQN);
+
+			}
+
+			else if (entitySetName.equals(ES_DP_NAME)) {
+
+				entitySet = new CsdlEntitySet();
+				entitySet.setName(ES_DP_NAME);
+				entitySet.setType(ET_DP_FQN);
+
+			}
 		}
 
 		return entitySet;
@@ -364,6 +448,8 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		entityTypes.add(getEntityType(ET_APPCONFG_FQN));
 		entityTypes.add(getEntityType(ET_DATACONF_FQN));
 		entityTypes.add(getEntityType(ET_FLOORPLAN_FQN));
+		entityTypes.add(getEntityType(ET_ZEMP_FQN));
+		entityTypes.add(getEntityType(ET_DP_FQN));
 		schema.setEntityTypes(entityTypes);
 
 		// add EntityContainer
@@ -386,6 +472,8 @@ public class DemoEdmProvider extends CsdlAbstractEdmProvider {
 		entitySets.add(getEntitySet(CONTAINER, ES_APPCONFG_NAME));
 		entitySets.add(getEntitySet(CONTAINER, ES_DATACONF_NAME));
 		entitySets.add(getEntitySet(CONTAINER, ES_FLOORPLAN_NAME));
+		entitySets.add(getEntitySet(CONTAINER, ES_ZEMP_NAME));
+		entitySets.add(getEntitySet(CONTAINER, ES_DP_NAME));
 
 		// create EntityContainer
 		CsdlEntityContainer entityContainer = new CsdlEntityContainer();

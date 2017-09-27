@@ -18,6 +18,8 @@
  */
 package myservice.mynamespace.data;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -28,6 +30,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
@@ -43,6 +46,14 @@ import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriParameter;
 
+import com.sap.conn.jco.AbapException;
+import com.sap.conn.jco.JCoDestination;
+import com.sap.conn.jco.JCoDestinationManager;
+import com.sap.conn.jco.JCoException;
+import com.sap.conn.jco.JCoFunction;
+import com.sap.conn.jco.JCoTable;
+
+import myservice.mynamespace.jco.TestJco;
 import myservice.mynamespace.service.DemoEdmProvider;
 import myservice.mynamespace.util.Util;
 
@@ -54,6 +65,8 @@ public class Storage {
 	private List<Entity> appconfgList;
 	private List<Entity> dataconfgList;
 	private List<Entity> floorplanList;
+	private List<Entity> zempList;
+	private List<Entity> dpconfigList;
 
 	public Storage() {
 		productList = new ArrayList<Entity>();
@@ -61,6 +74,8 @@ public class Storage {
 		appconfgList = new ArrayList<Entity>();
 		dataconfgList = new ArrayList<Entity>();
 		floorplanList = new ArrayList<Entity>();
+		dpconfigList = new ArrayList<Entity>();
+		zempList = new ArrayList<Entity>();
 
 		// creating some sample data
 		initProductSampleData();
@@ -68,6 +83,8 @@ public class Storage {
 		initAppConfg();
 		initDataConf();
 		initFloorPlan();
+		initDataProvider();
+		initZemp();
 	}
 
 	/* PUBLIC FACADE */
@@ -85,6 +102,10 @@ public class Storage {
 			entitySet = getDataConfg();
 		} else if (edmEntitySet.getName().equals(DemoEdmProvider.ES_FLOORPLAN_NAME)) {
 			entitySet = getFloorPlan();
+		} else if (edmEntitySet.getName().equals(DemoEdmProvider.ES_ZEMP_NAME)) {
+			entitySet = getZempPlan();
+		} else if (edmEntitySet.getName().equals(DemoEdmProvider.ES_DP_NAME)) {
+			entitySet = getDataProvider();
 		}
 
 		return entitySet;
@@ -105,6 +126,10 @@ public class Storage {
 			entity = getDataConfg(edmEntityType, keyParams);
 		} else if (edmEntityType.getName().equals(DemoEdmProvider.ET_FLOORPLAN_NAME)) {
 			entity = getFloorPlan(edmEntityType, keyParams);
+		} else if (edmEntityType.getName().equals(DemoEdmProvider.ET_ZEMP_NAME)) {
+			entity = getZempPlan(edmEntityType, keyParams);
+		} else if (edmEntityType.getName().equals(DemoEdmProvider.ET_DP_NAME)) {
+			entity = getDataProvider(edmEntityType, keyParams);
 		}
 
 		return entity;
@@ -167,6 +192,44 @@ public class Storage {
 	}
 
 	/* INTERNAL */
+	private EntityCollection getDataProvider() {
+		EntityCollection retEntitySet = new EntityCollection();
+
+		for (Entity productEntity : this.dpconfigList) {
+			retEntitySet.getEntities().add(productEntity);
+		}
+
+		return retEntitySet;
+	}
+
+	private Entity getDataProvider(EdmEntityType edmEntityType, List<UriParameter> keyParams) {
+
+		// the list of entities at runtime
+		EntityCollection entityCollection = getDataProvider();
+
+		/* generic approach to find the requested entity */
+		return Util.findEntity(edmEntityType, entityCollection, keyParams);
+	}
+
+	private EntityCollection getZempPlan() {
+		EntityCollection retEntitySet = new EntityCollection();
+
+		for (Entity productEntity : this.zempList) {
+			retEntitySet.getEntities().add(productEntity);
+		}
+
+		return retEntitySet;
+	}
+
+	private Entity getZempPlan(EdmEntityType edmEntityType, List<UriParameter> keyParams) {
+
+		// the list of entities at runtime
+		EntityCollection entityCollection = getZempPlan();
+
+		/* generic approach to find the requested entity */
+		return Util.findEntity(edmEntityType, entityCollection, keyParams);
+	}
+
 	private EntityCollection getFloorPlan() {
 		EntityCollection retEntitySet = new EntityCollection();
 
@@ -261,7 +324,133 @@ public class Storage {
 
 		return entitySet;
 	}
+
 	/* HELPER */
+	private static void createDestinationDataFile(String destinationName, Properties connectProperties) {
+		// TODO
+		File destCfg = new File(destinationName + ".jcoDestination");
+		try {
+			FileOutputStream fos = new FileOutputStream(destCfg, false);
+			connectProperties.store(fos, "for tests only !");
+			fos.close();
+		} catch (Exception e) {
+			throw new RuntimeException("Unable to create the destination files", e);
+		}
+
+	}
+
+	private void initDataProvider() {
+		// FPNAME STATUS FPCONFIG
+		dpconfigList.clear();
+		String moduleID = null;
+		String dataProvider = null;
+		String fieldName = null;
+		String apiName = null;
+		String status = null;
+		String parameterName = null;
+		String dpConfig = null;
+		String isKey = null;
+
+		Connection connection = null;
+
+		try {
+			connection = DBUtillocal.getConnection();
+			String query = "select * from dpconfig";
+			Statement pstmt = connection.createStatement();
+			java.sql.ResultSet rs = pstmt.executeQuery(query);
+			try {
+				while (rs.next()) {
+					moduleID = rs.getString("MODULEID");
+					dataProvider = rs.getString("DATAPROVIDER");
+					fieldName = rs.getString("FIELDNAME");
+					apiName = rs.getString("APINAME");
+					parameterName = rs.getString("PARAMETERNAME");
+					status = rs.getString("STATUS");
+					dpConfig = rs.getString("DPCONFIG");
+					isKey = rs.getString("ISKEY");
+					final Entity e = new Entity()
+							.addProperty(new Property(null, "MODULEID", ValueType.PRIMITIVE, moduleID))
+							.addProperty(new Property(null, "DATAPROVIDER", ValueType.PRIMITIVE, dataProvider))
+							.addProperty(new Property(null, "FIELDNAME", ValueType.PRIMITIVE, fieldName))
+							.addProperty(new Property(null, "APINAME", ValueType.PRIMITIVE, apiName))
+							.addProperty(new Property(null, "PARAMETERNAME", ValueType.PRIMITIVE, parameterName))
+							.addProperty(new Property(null, "STATUS", ValueType.PRIMITIVE, status))
+							.addProperty(new Property(null, "DPCONFIG", ValueType.PRIMITIVE, dpConfig))
+							.addProperty(new Property(null, "ISKEY", ValueType.PRIMITIVE, isKey));
+					e.setId(createId("dpconfig", e, moduleID));
+					dpconfigList.add(e);
+					System.out.println(dpconfigList.size());
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (connection != null) {
+				try {
+					connection.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
+
+	}
+
+	private void initZemp() {
+		zempList.clear(); // ZENO,ZENAME ZEADR ZEMPSALARY ZEMPDOB
+		String ZENO = null;
+		String ZENAME = null;
+		String ZEADR = null;
+		String ZEMPSALA = null;
+		String ZEMPDOB = null;
+		try {
+
+			JCoDestination destination1 = JCoDestinationManager.getDestination("mySAPSystem");
+			try {
+				destination1.ping();
+				JCoDestination destination = TestJco.callZempTable();
+				JCoFunction function = destination.getRepository().getFunction("ZBAPI_EMP_LIST_001");
+				if (function == null)
+					throw new RuntimeException("Not found in SAP.");
+				try {
+					function.execute(destination);
+				} catch (AbapException e) {
+					System.out.println(e.toString());
+					return;
+				}
+
+				JCoTable resultTable = function.getTableParameterList().getTable("ET_EMP_LIST1");
+				for (int i = 0; i < resultTable.getNumRows(); i++, resultTable.nextRow()) {
+					ZENO = resultTable.getString("ZENO"); // ZENO ZENAME ZEADR
+															// ZEMPSALA ZEMPDOB
+					ZENAME = resultTable.getString("ZENAME");
+					ZEADR = resultTable.getString("ZEADR");
+					ZEMPSALA = resultTable.getString("ZEMPSALARY");
+					ZEMPDOB = resultTable.getString("ZEMPDOB");
+					final Entity e = new Entity().addProperty(new Property(null, "ZENO", ValueType.PRIMITIVE, ZENO))
+							.addProperty(new Property(null, "ZENAME", ValueType.PRIMITIVE, ZENAME))
+							.addProperty(new Property(null, "ZEADR", ValueType.PRIMITIVE, ZEADR))
+							.addProperty(new Property(null, "ZEMPSALA", ValueType.PRIMITIVE, ZEMPSALA))
+							.addProperty(new Property(null, "ZEMPDOB", ValueType.PRIMITIVE, ZEMPDOB));
+					e.setId(createId("zemptable", e, ZENO));
+					zempList.add(e);
+					System.out.println(zempList.size());
+				}
+
+			} catch (JCoException e) {
+				e.printStackTrace();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
 
 	private void initFloorPlan() {
 
@@ -526,6 +715,8 @@ public class Storage {
 			return DemoEdmProvider.ES_DATACONF_NAME;
 		} else if (DemoEdmProvider.ET_FLOORPLAN_FQN.getFullQualifiedNameAsString().equals(entity.getType())) {
 			return DemoEdmProvider.ES_FLOORPLAN_NAME;
+		} else if (DemoEdmProvider.ET_DP_FQN.getFullQualifiedNameAsString().equals(entity.getType())) {
+			return DemoEdmProvider.ES_DP_NAME;
 		}
 		return entity.getType();
 	}
@@ -559,8 +750,51 @@ public class Storage {
 		if (edmEntityType.getName().equals(DemoEdmProvider.ET_FLOORPLAN_NAME)) {
 			return createFloorplan(edmEntityType, entityToCreate);
 		}
+		if (edmEntityType.getName().equals(DemoEdmProvider.ET_DP_NAME)) {
+			return createDataProvider(edmEntityType, entityToCreate);
+		}
 
 		return null;
+	}
+
+	private Entity createDataProvider(EdmEntityType edmEntityType, Entity entity) {
+
+		Connection con = null;
+		try {
+
+			con = DBUtillocal.getConnection();
+			String query = "insert into dpconfig(MODULEID,DATAPROVIDER,FIELDNAME,APINAME,PARAMETERNAME,STATUS,DPCONFIG,ISKEY) values(?,?,?,?,?,?,?,?)";
+			PreparedStatement pStmt = con.prepareStatement(query);
+			pStmt.setString(1, entity.getProperty("MODULEID").getValue().toString());
+			pStmt.setString(2, entity.getProperty("DATAPROVIDER").getValue().toString());
+			pStmt.setString(3, entity.getProperty("FIELDNAME").getValue().toString());
+			pStmt.setString(4, entity.getProperty("APINAME").getValue().toString());
+			pStmt.setString(5, entity.getProperty("PARAMETERNAME").getValue().toString());
+			pStmt.setString(6, entity.getProperty("STATUS").getValue().toString());
+			pStmt.setString(7, entity.getProperty("DPCONFIG").getValue().toString());
+			pStmt.setString(8, entity.getProperty("ISKEY").getValue().toString());
+			int n = pStmt.executeUpdate();
+			if (n > 0) {
+				this.dpconfigList.add(entity);
+				System.out.println("Data Inserted Successfully ID:");
+			}
+
+		} catch (Exception exp) {
+			System.out.println(exp.getMessage());
+			exp.printStackTrace();
+			throw new ODataRuntimeException("Duplicate entry for key 'PRIMARY'" + entity);
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+				} catch (SQLException se) {
+					System.out.println(se.getMessage());
+					se.printStackTrace();
+				}
+			}
+		}
+		return entity;
+
 	}
 
 	/*
@@ -852,6 +1086,94 @@ public class Storage {
 		}
 		if (edmEntityType.getName().equals(DemoEdmProvider.ET_FLOORPLAN_NAME)) {
 			updateFloorplan(edmEntityType, keyParams, updateEntity, httpMethod);
+		}
+		if (edmEntityType.getName().equals(DemoEdmProvider.ET_DP_NAME)) {
+			updateDataProvider(edmEntityType, keyParams, updateEntity, httpMethod);
+		}
+	}
+
+	private void updateDataProvider(EdmEntityType edmEntityType, List<UriParameter> keyParams, Entity entity,
+			HttpMethod httpMethod) throws ODataApplicationException {
+		Entity extensionEntity = getDataProvider(edmEntityType, keyParams);
+		if (extensionEntity == null) {
+			throw new ODataApplicationException("Entity not found", HttpStatusCode.NOT_FOUND.getStatusCode(),
+					Locale.ENGLISH);
+		}
+		// loop over all properties and replace the values with the values of
+		// the given payload
+		// Note: ignoring ComplexType, as we don't have it in our odata model
+		StringBuilder updateQuery = new StringBuilder("update dpconfig set ");
+		@SuppressWarnings("unused")
+		String keyProperty = null;
+		List<Property> existingProperties = extensionEntity.getProperties();
+		String keyPropValue = null;
+		for (Property existingProp : existingProperties) {
+			String propName = existingProp.getName();
+			// ignore the key properties, they aren't updateable
+			if (isKey(edmEntityType, propName)) {
+				keyProperty = propName;
+				keyPropValue = existingProp.getValue().toString();
+				continue;
+			}
+			String existingPropValue = null;
+			try {
+				existingPropValue = entity.getProperty(propName).getValue() + "";
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if ("null".equals(existingPropValue) || null == existingPropValue) {
+				updateQuery.append(propName + " = ");
+				updateQuery.append(existingPropValue);
+				updateQuery.append(",");
+			} else {
+				updateQuery.append(propName + " = \"");
+				updateQuery.append(existingPropValue);
+				updateQuery.append("\",");
+			}
+		}
+		updateQuery.deleteCharAt(updateQuery.lastIndexOf(",")).append(" where MODULEID = " + keyPropValue);
+		Connection connection = DBUtillocal.getConnection();
+		try {
+			// System.out.println("udate query"+updateQuery);
+			int n = connection.createStatement().executeUpdate(updateQuery.toString());
+			System.out.println("n=" + n);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			for (Property existingProp : existingProperties) {
+				// get the connection
+				String propName = existingProp.getName();
+				// ignore the key properties, they aren't updateable
+				if (isKey(edmEntityType, propName)) {
+					continue;
+				}
+				Property updateProperty = entity.getProperty(propName);
+				// the request payload might not consider ALL properties, so it
+				// can be null
+				if (updateProperty == null) {
+					// if a property has NOT been added to the request payload
+					// depending on the HttpMethod, our behavior is different
+					if (httpMethod.equals(HttpMethod.PATCH)) {
+						// as of the OData spec, in case of PATCH, the existing
+						// property is not touched
+						continue; // do nothing
+					} else if (httpMethod.equals(HttpMethod.PUT)) {
+						if (keyPropValue != null && !keyPropValue.isEmpty()) {
+							existingProp.setValue(existingProp.getValueType(), null);
+						}
+						continue;
+					}
+				}
+				if (keyPropValue != null && !keyPropValue.isEmpty()) {
+					existingProp.setValue(existingProp.getValueType(), updateProperty.getValue());
+				}
+			}
+		} catch (Exception exp) {
+			System.out.println(exp.getMessage());
+			exp.printStackTrace();
 		}
 	}
 
@@ -1254,7 +1576,11 @@ public class Storage {
 		if (edmEntityType.getName().equals(DemoEdmProvider.ET_FLOORPLAN_NAME)) {
 			deleteFloorplan(edmEntityType, keyParams);
 		}
+		if (edmEntityType.getName().equals(DemoEdmProvider.ET_DP_NAME)) {
+			deleteDataProvider(edmEntityType, keyParams);
+		}
 	}
+
 	/*
 	 * private void deleteProduct(EdmEntityType edmEntityType,
 	 * List<UriParameter> keyParams) throws ODataApplicationException {
@@ -1266,6 +1592,44 @@ public class Storage {
 	 * 
 	 * this.productList.remove(productEntity); }
 	 */
+	private void deleteDataProvider(EdmEntityType edmEntityType, List<UriParameter> keyParams)
+			throws ODataApplicationException {
+		Entity extensionEntity = getDataProvider(edmEntityType, keyParams);
+		if (extensionEntity == null) {
+			throw new ODataApplicationException("Entity not found", HttpStatusCode.NOT_FOUND.getStatusCode(),
+					Locale.ENGLISH);
+		}
+		// delete from db also
+		String keyPropertyName = extensionEntity.getProperty("MODULEID").getName();
+		String keyPropertyValue = String.valueOf(extensionEntity.getProperty("MODULEID").getValue());
+		keyPropertyValue = Storage.quote(keyPropertyValue);
+		java.sql.Connection connection = null;
+		try {
+			connection = DBUtillocal.getConnection();
+			// java.sql.Statement statement = connection.createStatement();
+			String query = "delete from  dpconfig where " + keyPropertyName + "=" + keyPropertyValue;
+			Statement pstmt = connection.createStatement();
+			int no = pstmt.executeUpdate(query);
+			if (no > 0) {
+				this.dpconfigList.remove(extensionEntity);
+			}
+		} catch (java.sql.SQLException se) {
+			se.printStackTrace();
+		} catch (Exception exp) {
+			System.out.println("inside catch " + exp.getMessage());
+		} finally {
+			if (connection != null) {
+				try {
+					connection.close();
+					DBUtillocal.Close();
+				} catch (Exception e) {
+					System.out.println("exception in closing connection");
+					e.printStackTrace();
+				}
+			}
+		}
+
+	}
 
 	private void deleteFloorplan(EdmEntityType edmEntityType, List<UriParameter> keyParams)
 			throws ODataApplicationException {
@@ -1277,7 +1641,7 @@ public class Storage {
 		// delete from db also
 		String keyPropertyName = extensionEntity.getProperty("APPID").getName();
 		String keyPropertyValue = String.valueOf(extensionEntity.getProperty("APPID").getValue());
-		keyPropertyValue=Storage.quote(keyPropertyValue);
+		keyPropertyValue = Storage.quote(keyPropertyValue);
 		java.sql.Connection connection = null;
 		try {
 			connection = DBUtillocal.getConnection();
@@ -1385,12 +1749,9 @@ public class Storage {
 	}
 
 	public static String quote(String s) {
-	    return new StringBuilder()
-	        .append('\'')
-	        .append(s)
-	        .append('\'')
-	        .toString();
+		return new StringBuilder().append('\'').append(s).append('\'').toString();
 	}
+
 	private void deleteProduct(EdmEntityType edmEntityType, List<UriParameter> keyParams)
 			throws ODataApplicationException {
 		Entity extensionEntity = getProduct(edmEntityType, keyParams);
