@@ -24,7 +24,7 @@ under the License.
 <a href="INVAPI/RACE_API_SRV/$metadata">Race Java API Service Metadata</a>
 <h3>Sample Links</h3>
 <ul>
-    <li>
+<!--     <li>
         <h4>Read Entities</h4>
         <ul>
             <li>
@@ -34,15 +34,65 @@ under the License.
                 <a href="INVAPI/RACE_API_SRV/Dataconfs(1)">Dataconfs Entity - /Dataconfs(1)</a>
             </li>
         </ul>
-    </li>
+    </li> -->
     <li>
-        <h4>Read Entity Sets</h4>
+        <h3>Read Entity Sets</h3>
         <ul>
             <li>
                 <a href="INVAPI/RACE_API_SRV/Appconfgs">AppConfgs Entities - /Appconfgs</a>
             </li>
             <li>
                 <a href="INVAPI/RACE_API_SRV/Dataconfs">Dataconfs Entities - /Dataconfs</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Floorplans">Floorplans Entities - /Floorplans</a>
+            </li>
+             <li>
+                <a href="INVAPI/RACE_API_SRV/Dpconfig">Dpconfig Entities - /Dpconfig</a>
+            </li>
+        </ul>
+    </li>
+    
+     <li>
+        <h4>Read SAP BAPI Using JCO</h4>
+        <ul>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Zemptable">Zemptable Entities - /Zemptable</a>
+            </li>
+        </ul>
+    </li>
+    
+    
+    <li>
+        <h4>Top, Count, Skip for Entity Sets</h4>
+        <ul>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Appconfgs?$top=3">Top three of Appconfgs - /Appconfgs/?$top=3</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Dataconfs?$top=3">Top three of Dataconfs - /Dataconfs/?$top=3</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Floorplans?$top=3">Top three of Floorplans - /Floorplans/?$top=3</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Dpconfig?$top=3">Top three of Dpconfig - /Dpconfig/?$top=3</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Dpconfig?$skip=1&$top=1&$count=true">Skip two, get first two and count all
+                    Dpconfig - /Dpconfig/?$skip=2&$top=2&$count=true</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Appconfgs?$skip=1&$top=1&$count=true">Skip two, get first two and count all
+                    Appconfgs - /Appconfgs/?$skip=2&$top=2&$count=true</a>
+            </li>
+             <li>
+                <a href="INVAPI/RACE_API_SRV/Floorplans?$skip=1&$top=1&$count=true">Skip two, get first two and count all
+                    Floorplans - /Floorplans/?$skip=2&$top=2&$count=true</a>
+            </li>
+            <li>
+                <a href="INVAPI/RACE_API_SRV/Dataconfs?$skip=1&$top=1&$count=true">Skip two, get first two and count all
+                    Dataconfs - /Dataconfs/?$skip=2&$top=2&$count=true</a>
             </li>
         </ul>
     </li>

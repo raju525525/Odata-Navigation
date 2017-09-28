@@ -24,10 +24,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -39,8 +35,6 @@ import java.util.Locale;
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
-import org.apache.olingo.commons.api.data.Property;
-import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
@@ -67,15 +61,9 @@ import org.apache.olingo.server.api.uri.queryoption.TopOption;
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.ExpressionVisitException;
 
-import com.sap.conn.jco.JCoDestination;
-import com.sap.conn.jco.JCoException;
-import com.sap.conn.jco.JCoFunction;
-import com.sap.conn.jco.JCoTable;
-
-import myservice.mynamespace.data.DBUtillocal;
+import myservice.mynamespace.data.BAPIFunction;
 import myservice.mynamespace.data.ODataServiceTrace;
 import myservice.mynamespace.data.Storage;
-import myservice.mynamespace.jco.TestJco;
 import myservice.mynamespace.util.TracingBean;
 
 public class DemoEntityCollectionProcessor implements EntityCollectionProcessor {
@@ -180,164 +168,118 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 		// 3rd: Check if filter system query option is provided and apply the
 		// expression if necessary
 		FilterOption filterOption = uriInfo.getFilterOption();
-		if (filterOption != null) {
-			// Apply $filter system query option
-			try {
-				entityList = entityCollection.getEntities();
-				Iterator<Entity> entityIterator = entityList.iterator();
+		String a = "Dpconfig";
+		Object object1 = a;
+		List<Entity> filtterImportExportBAPI = null;
+		boolean equals2 = DemoEntityCollectionProcessor.equals2(object1, edmEntitySet.getName());
+		if (filterOption != null && filterOption.getText().equalsIgnoreCase("DATAPROVIDER eq 'POSUMMARY'") && equals2) {
 
-				// Evaluate the expression for each entity
-				// If the expression is evaluated to "true", keep the entity
-				// otherwise remove it from the entityList
-				while (entityIterator.hasNext()) {
-					// To evaluate the the expression, create an instance of the
-					// Filter Expression Visitor and pass
-					// the current entity to the constructor
-					Entity currentEntity = entityIterator.next();
-					Expression filterExpression = filterOption.getExpression();
-					FilterExpressionVisitor expressionVisitor = new FilterExpressionVisitor(currentEntity);
-
-					// Start evaluating the expression
-					Object visitorResult = filterExpression.accept(expressionVisitor);
-
-					// The result of the filter expression must be of type
-					// Edm.Boolean
-					if (visitorResult instanceof Boolean) {
-						if (!Boolean.TRUE.equals(visitorResult)) {
-							// The expression evaluated to false (or null), so
-							// we have to remove the currentEntity from
-							// entityList
-							entityIterator.remove();
-						}
-					} else {
-						throw new ODataApplicationException("A filter expression must evaulate to type Edm.Boolean",
-								HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
-					}
-				}
-
-			} catch (ExpressionVisitException e) {
-				throw new ODataApplicationException("Exception in filter evaluation",
-						HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH);
-			}
-		}
-
-		// after applying the query options, create EntityCollection based on
-		// the reduced list
-
-		// JCO START
-		JCoDestination destination = TestJco.callZempTable();
-		JCoFunction function = null;
-		try {
-			function = destination.getRepository().getFunction("/INVAPI/BAPI_DYNAMIC_GET_CALL");
-		} catch (JCoException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		// JCO END
-
-		// Entity display Process
-		for (Entity entity : entityList) {
-			returnEntityCollection.getEntities().add(entity);
+			filtterImportExportBAPI = BAPIFunction.getFiltterImportExportBAPI(uriInfo, entityList,
+					returnEntityCollection, etdynamicData, response, responseFormat);
 
 			// JCO START with only call Filter not null
-			if (filterOption != null) {
-				if (function == null)
-					throw new RuntimeException("Not found in SAP.");
-				JCoTable tableParameterList = function.getImportParameterList().getTable("IT_DPDATA");
-				tableParameterList.appendRow();
-				tableParameterList.setValue("MODULEID", entity.getProperty("MODULEID").getValue().toString());
-				tableParameterList.setValue("DATAPROVIDER", entity.getProperty("DATAPROVIDER").getValue().toString());
-				tableParameterList.setValue("FIELDNAME", entity.getProperty("FIELDNAME").getValue().toString());
-				tableParameterList.setValue("APINAME", entity.getProperty("APINAME").getValue().toString());
-				tableParameterList.setValue("PARAMETERNAME", entity.getProperty("PARAMETERNAME").getValue().toString());
-				tableParameterList.setValue("DPCONFIG", entity.getProperty("DPCONFIG").getValue().toString());
+			if (filtterImportExportBAPI != null) {
+				ByteArrayInputStream stream = null;
+				StringBuilder sb = new StringBuilder();
+				for (Entity s : filtterImportExportBAPI) {
+					sb.append(s);
+				}
+				try {
+					stream = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				response.setContent(stream);
+				response.setStatusCode(HttpStatusCode.OK.getStatusCode());
+				response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
 			}
 			// JCO END
+		} else {
 
-		}
+			if (filterOption != null) {
+				// Apply $filter system query option
+				try {
+					entityList = entityCollection.getEntities();
+					Iterator<Entity> entityIterator = entityList.iterator();
 
-		// JCO START with only call Filter not null
-		if (filterOption != null) {
-			try {
-				function.execute(destination);
-			} catch (JCoException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+					// Evaluate the expression for each entity
+					// If the expression is evaluated to "true", keep the entity
+					// otherwise remove it from the entityList
+					while (entityIterator.hasNext()) {
+						// To evaluate the the expression, create an instance of
+						// the
+						// Filter Expression Visitor and pass
+						// the current entity to the constructor
+						Entity currentEntity = entityIterator.next();
+						Expression filterExpression = filterOption.getExpression();
+						FilterExpressionVisitor expressionVisitor = new FilterExpressionVisitor(currentEntity);
+
+						// Start evaluating the expression
+						Object visitorResult = filterExpression.accept(expressionVisitor);
+
+						// The result of the filter expression must be of type
+						// Edm.Boolean
+						if (visitorResult instanceof Boolean) {
+							if (!Boolean.TRUE.equals(visitorResult)) {
+								// The expression evaluated to false (or null),
+								// so
+								// we have to remove the currentEntity from
+								// entityList
+								entityIterator.remove();
+							}
+						} else {
+							throw new ODataApplicationException("A filter expression must evaulate to type Edm.Boolean",
+									HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
+						}
+					}
+
+				} catch (ExpressionVisitException e) {
+					throw new ODataApplicationException("Exception in filter evaluation",
+							HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH);
+				}
 			}
 
-			JCoTable resultTable = function.getExportParameterList().getTable("ET_DYNAMIC_DATA");
-			try {
-
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			for (int i = 0; i < resultTable.getNumRows(); i++, resultTable.nextRow()) {
-				etdynamicData.clear();
-				String SNO = resultTable.getString("SNO");
-				String DATAPROVIDER = resultTable.getString("DATAPROVIDER");
-				String KEYVALUES = resultTable.getString("KEYVALUES");
-				String JSON = resultTable.getString("JSON");
-				Entity entity = new Entity().addProperty(new Property(null, "SNO", ValueType.PRIMITIVE, SNO))
-						.addProperty(new Property(null, "DATAPROVIDER", ValueType.PRIMITIVE, DATAPROVIDER))
-						.addProperty(new Property(null, "KEYVALUES", ValueType.PRIMITIVE, KEYVALUES))
-						.addProperty(new Property(null, "JSON", ValueType.PRIMITIVE, JSON));
-				entity.setId(createId("ET_DYNAMIC_DATA", entity, SNO));
-				etdynamicData.add(entity);
+			for (Entity entity : entityList) {
+				returnEntityCollection.getEntities().add(entity);
 			}
 
-		}
-		// JCO END
+			// after applying the query options, create EntityCollection based
+			// on
+			// the reduced list
 
-		// 4th: create a serializer based on the requested format (json)
-		ODataSerializer serializer = odata.createSerializer(responseFormat);
+			// 4th: create a serializer based on the requested format (json)
+			ODataSerializer serializer = odata.createSerializer(responseFormat);
 
-		// and serialize the content: transform from the EntitySet object to
-		// InputStream
-		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
-		bean.setRequest_Uri(request.getRawRequestUri());
+			// and serialize the content: transform from the EntitySet object to
+			// InputStream
+			EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+			ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+			bean.setRequest_Uri(request.getRawRequestUri());
 
-		final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
-		EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().contextURL(contextUrl).id(id)
-				.count(countOption).build();
-		SerializerResult serializerResult = serializer.entityCollection(srvMetadata, edmEntityType,
-				returnEntityCollection, opts);
-		Date nowTime = new Date();
-		long diffs = nowTime.getTime() - relativeTime.getTime();
-		long dateandTimes = diffs / 1000;
-		bean.setTime_Diffirence(dateandTimes);
-		bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
+			final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
+			EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().contextURL(contextUrl)
+					.id(id).count(countOption).build();
+			SerializerResult serializerResult = serializer.entityCollection(srvMetadata, edmEntityType,
+					returnEntityCollection, opts);
+			Date nowTime = new Date();
+			long diffs = nowTime.getTime() - relativeTime.getTime();
+			long dateandTimes = diffs / 1000;
+			bean.setTime_Diffirence(dateandTimes);
+			bean.setResponse_Code(HttpStatusCode.OK.getStatusCode());
 
-		// Tracing inserertion Code
-		ODataServiceTrace.tracingMethod(bean);
+			// Tracing inserertion Code
+			ODataServiceTrace.tracingMethod(bean);
 
-		// 5th: configure the response object: set the body, headers and status
-		// codez
+			// 5th: configure the response object: set the body, headers and
+			// status
+			// codez
 
-		// JCO START with only call Filter not null
-		if (filterOption != null) {
-			ByteArrayInputStream stream = null;
-			StringBuilder sb = new StringBuilder();
-			for (Entity s : etdynamicData) {
-				sb.append(s);
-			}
-			try {
-				stream = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			response.setContent(stream);
-			response.setStatusCode(HttpStatusCode.OK.getStatusCode());
-			response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
-		}
-		// JCO END
-		else {
 			response.setContent(serializerResult.getContent());
 			response.setStatusCode(HttpStatusCode.OK.getStatusCode());
 			response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
 		}
+
 	}
 
 	private URI createId(String entitySetName, Entity entity, Object id) {
@@ -350,5 +292,13 @@ public class DemoEntityCollectionProcessor implements EntityCollectionProcessor 
 			exp.printStackTrace();
 		}
 		return null;
+	}
+
+	public static boolean equals2(Object object1, Object object2) { // equals2
+																	// method
+		if (object1.equals(object2)) { // if equals() method returns true
+			return true; // return true
+		} else
+			return false; // if equals() method returns false, also return false
 	}
 }
